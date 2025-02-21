@@ -8,7 +8,7 @@ import Foundation
 
 import Foundation
 
-struct MistralTranslationResponse: Decodable {
+struct MistralResponse: Decodable {
     let id: String
     let object: String
     let created: Int
@@ -41,5 +41,15 @@ struct Message: Decodable {
 }
 
 struct TranslationResponse: Decodable {
+    let transcription: String
     let translations: [String]
+}
+
+struct DefinitionResponse: Decodable {
+    let definitions: [Definition]
+}
+
+struct Definition: Decodable {
+    let wordClass: String
+    let definition: String
 }

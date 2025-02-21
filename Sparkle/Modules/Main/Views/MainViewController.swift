@@ -28,14 +28,11 @@ class MainViewController: UIViewController {
         configureButtons()
     }
     
-    // MARK: - Profile Button Configuration
     private func configureProfileButton() {
         profileButton.setImage(Constants.ProfileButton.image, for: .normal)
-        profileButton.imageView?.setWidth(Constants.ProfileButton.imageSize)
-        profileButton.imageView?.setHeight(Constants.ProfileButton.imageSize)
         profileButton.backgroundColor = Constants.ProfileButton.bgColor
         profileButton.layer.cornerRadius = Constants.ProfileButton.size / 2
-        
+        profileButton.imageView?.contentMode = .scaleAspectFit
         
         view.addSubview(profileButton)
         profileButton.setWidth(Constants.ProfileButton.size)
@@ -44,64 +41,41 @@ class MainViewController: UIViewController {
         profileButton.pinRight(to: view.layoutMarginsGuide.trailingAnchor)
     }
     
-    // MARK: - Streak Flame Configuration
     private func configureStreakFlame() {
         view.addSubview(streakFlame)
         streakFlame.pinTop(to: profileButton.bottomAnchor, 15)
         streakFlame.pinRight(to: view.layoutMarginsGuide.trailingAnchor)
     }
     
-    // MARK: - Button Configuration
     private func configureButtons() {
-        let row1 = UIStackView()
-        row1.distribution = .equalSpacing
-        buttonsStack.addArrangedSubview(row1)
-        
-        let progressButton = SquareButton(
-            title: Constants.ProgressButton.title,
-            titleColor: Constants.ProgressButton.titleColor,
-            image: Constants.ProgressButton.image,
-            backgroundColor: Constants.ProgressButton.bgColor
-        )
-        row1.addArrangedSubview(progressButton)
-        
-        let addButton = SquareButton(
-            title: Constants.AddButton.title,
-            titleColor: Constants.AddButton.titleColor,
-            image: Constants.AddButton.image,
-            backgroundColor: Constants.AddButton.bgColor
-        )
-        row1.addArrangedSubview(addButton)
-        
-        let row2 = UIStackView()
-        row2.distribution = .equalSpacing
-        buttonsStack.addArrangedSubview(row2)
-        
-        let dictionaryButton = SquareButton(
-            title: Constants.DictionaryButton.title,
-            titleColor: Constants.DictionaryButton.titleColor,
-            image: Constants.DictionaryButton.image,
-            backgroundColor: Constants.DictionaryButton.bgColor
-        )
-        row2.addArrangedSubview(dictionaryButton)
-        
-        let practiceButton = SquareButton(
-            title: Constants.PracticeButton.title,
-            titleColor: Constants.PracticeButton.titleColor,
-            image: Constants.PracticeButton.image,
-            backgroundColor: Constants.PracticeButton.bgColor
-        )
-        row2.addArrangedSubview(practiceButton)
-        
-        
         buttonsStack.axis = .vertical
-        buttonsStack.distribution = .equalSpacing
+        buttonsStack.distribution = .fillEqually
+        buttonsStack.spacing = Constants.ButtonStack.spacing
         
         view.addSubview(buttonsStack)
-        buttonsStack.heightAnchor.constraint(equalTo: buttonsStack.widthAnchor).isActive = true
         buttonsStack.pinLeft(to: view.layoutMarginsGuide.leadingAnchor)
         buttonsStack.pinRight(to: view.layoutMarginsGuide.trailingAnchor)
-        buttonsStack.pinTop(to: streakFlame.bottomAnchor, 100)
+        buttonsStack.pinBottom(to: view.layoutMarginsGuide.bottomAnchor, Constants.ButtonStack.offset)
+        
+        let rows = [UIStackView(), UIStackView()]
+        
+        let buttonConfigs = [
+            (Constants.ProgressButton.title, Constants.ProgressButton.titleColor, Constants.ProgressButton.image, Constants.ProgressButton.bgColor),
+            (Constants.AddButton.title, Constants.AddButton.titleColor, Constants.AddButton.image, Constants.AddButton.bgColor),
+            (Constants.DictionaryButton.title, Constants.DictionaryButton.titleColor, Constants.DictionaryButton.image, Constants.DictionaryButton.bgColor),
+            (Constants.PracticeButton.title, Constants.PracticeButton.titleColor, Constants.PracticeButton.image, Constants.PracticeButton.bgColor)
+        ]
+        
+        for (row, buttonConfig) in zip(rows, buttonConfigs.chuncked(into: 2)) {
+            row.distribution = .fillEqually
+            row.spacing = Constants.ButtonStack.spacing
+            buttonsStack.addArrangedSubview(row)
+            
+            for config in buttonConfig {
+                let button = SquareButton(title: config.0, titleColor: config.1, image: config.2, backgroundColor: config.3)
+                row.addArrangedSubview(button)
+            }
+        }
     }
     
     // MARK: - Constants
@@ -113,6 +87,7 @@ class MainViewController: UIViewController {
         
         enum ButtonStack {
             static let spacing: CGFloat = 15
+            static let offset: CGFloat = 30
         }
         
         enum ProfileButton {

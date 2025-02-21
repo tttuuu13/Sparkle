@@ -15,11 +15,10 @@ protocol AddWordInteractorProtocol {
 // MARK: - Interactor Implementation
 final class AddWordInteractor: AddWordInteractorProtocol {
     var presenter: AddWordPresenterProtocol?
-    var mistralWorker: MistralWorker?
     var textToSpeechWorker: TextToSpeechWorker?
     
     func fetchTranslations(for word: String) {
-        mistralWorker?.getTranslations(for: word) { result in
+        MistralWorker.shared.getTranslations(for: word) { result in
             switch result {
             case .success(let translations):
                 DispatchQueue.main.async {
@@ -27,10 +26,24 @@ final class AddWordInteractor: AddWordInteractorProtocol {
                 }
             case .failure(let error):
                 DispatchQueue.main.async {
-                    self.presenter?.presentTranslations([String]()) // TODO: CHANGE LATER
+                    self.presenter?.presentError(error)
                 }
             }
         }
     }
-    func fetchDefinitions(for word: String) {}
+    
+    func fetchDefinitions(for word: String) {
+        MistralWorker.shared.getDefinitions(for: word) { result in
+            switch result {
+            case .success(let definitions):
+                DispatchQueue.main.async {
+                    self.presenter?.presentDefinitions(definitions)
+                }
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.presenter?.presentError(error)
+                }
+            }
+        }
+    }
 }

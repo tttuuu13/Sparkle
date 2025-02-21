@@ -8,24 +8,22 @@
 import UIKit
 import AVFoundation
 
-// MARK: - Protocol for configurable views
-protocol ConfigurableView {
-    associatedtype Model
-    func configure(with model: Model)
-}
-
 // MARK: - Translation Model
-struct TranslationModel {
+struct TranslationModel: CardFaceModel {
     var text: String
     var transcription: String?
     var audioURL: URL?
+    var counter: Counter?
+}
+
+struct Counter {
+    var current: Int
+    var total: Int
 }
 
 // MARK: - Translation View
 final class TranslationView: UIView, ConfigurableView {
-    // MARK: - Typealias for conformance
     typealias Model = TranslationModel
-    
     // MARK: - Fields
     private var audioURL: URL?
     
@@ -47,11 +45,20 @@ final class TranslationView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: Model) {
+    func configure(with model: CardFaceModel) {
+        guard let model = model as? TranslationModel else {
+            print("View \(self) configured with wrong model type.")
+            return
+        }
+        
         textLabel.text = model.text
         transcriptionLabel.text = model.transcription
         if let audioURL = model.audioURL {
             self.audioURL = audioURL
+        }
+        
+        if let counter = model.counter {
+            self.cardCounter.text = "\(counter.current)/\(counter.total)"
         }
     }
     
@@ -111,11 +118,11 @@ final class TranslationView: UIView, ConfigurableView {
     // MARK: - Constants
     private enum Constants {
         enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
         }
         
         enum TextLabel {
-            static let font: UIFont = .systemFont(ofSize: 40, weight: .medium)
+            static let font: UIFont = .systemFont(ofSize: 30, weight: .medium)
             static let offset: CGFloat = 10
         }
         
@@ -136,6 +143,7 @@ final class TranslationView: UIView, ConfigurableView {
     }
 }
 
+@available(iOS 17.0, *)
 #Preview {
     let view = TranslationView()
     view.configure(with: TranslationModel(text: "яблоко"))

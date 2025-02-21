@@ -83,6 +83,7 @@ final class StreakFlame: UIView {
     }
 }
 
+@available(iOS 17.0, *)
 #Preview {
     let flame = StreakFlame()
     return flame

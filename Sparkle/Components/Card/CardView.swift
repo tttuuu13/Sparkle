@@ -7,17 +7,22 @@
 
 import UIKit
 
-class CardView<Front: UIView & ConfigurableView, Back: UIView & ConfigurableView>: UIView, ConfigurableView {
+protocol CardFaceModel {}
+
+protocol ConfigurableView: UIView {
+    func configure(with model: CardFaceModel)
+}
+
+class CardView: UIView {
     // MARK: - Fields
-    var frontView: Front = Front()
-    var backView: Back = Back()
+    var frontView: (any UIView & ConfigurableView)?
+    var backView: (any UIView & ConfigurableView)?
     var isFlipped: Bool = false
     
     // MARK: - Initializers
-    init(isFlipped: Bool) {
+    init() {
         super.init(frame: .zero)
-        self.isFlipped = isFlipped
-        configureUI()
+        layer.cornerRadius = Constants.cornerRadius
     }
     
     @available(*, unavailable)
@@ -26,32 +31,38 @@ class CardView<Front: UIView & ConfigurableView, Back: UIView & ConfigurableView
     }
     
     // MARK: - Configuration Method
-    func configure(with models: (Front.Model, Back.Model)) {
-        frontView.configure(with: models.0)
-        backView.configure(with: models.1)
+    func configure(with models: (CardFaceModel, CardFaceModel?)) {
+        frontView?.configure(with: models.0)
+        if let backModel = models.1 {
+            backView?.configure(with: backModel)
+        }
     }
     
-    // MARK: - UI Configuration
-    private func configureUI() {        
-        layer.cornerRadius = Constants.cornerRadius
-        
-        frontView.layer.cornerRadius = Constants.cornerRadius
-        addSubview(frontView)
-        frontView.pinVertical(to: self)
-        frontView.pinHorizontal(to: self)
-        
-        backView.layer.cornerRadius = Constants.cornerRadius
-        addSubview(backView)
-        backView.pinVertical(to: self)
-        backView.pinHorizontal(to: self)
-        
+    func setFrontView(to view: any UIView & ConfigurableView) {
+        frontView?.removeFromSuperview()
+        view.layer.cornerRadius = Constants.cornerRadius
+        addSubview(view)
+        view.pinVertical(to: self)
+        view.pinHorizontal(to: self)
         if isFlipped {
-            frontView.transform = CGAffineTransform(scaleX: -1, y: 1)
-            frontView.isHidden = true
-        } else {
-            backView.transform = CGAffineTransform(scaleX: -1, y: 1)
-            backView.isHidden = true
+            view.transform = CGAffineTransform(scaleX: -1, y: 1)
+            view.isHidden = true
         }
+        
+        self.frontView = view
+    }
+    
+    func setBackView(to view: any UIView & ConfigurableView) {
+        backView?.removeFromSuperview()
+        view.layer.cornerRadius = Constants.cornerRadius
+        addSubview(view)
+        view.pinVertical(to: self)
+        view.pinHorizontal(to: self)
+        if !isFlipped {
+            view.transform = CGAffineTransform(scaleX: -1, y: 1)
+            view.isHidden = true
+        }
+        backView = view
     }
     
     // MARK: - Animated Card Flip
@@ -59,14 +70,14 @@ class CardView<Front: UIView & ConfigurableView, Back: UIView & ConfigurableView
         var transform = CATransform3DIdentity
         transform.m34 = -1.0 / 3000
         
-        UIView.animate(withDuration: Constants.flipDuration, delay: 0, options: [.curveEaseIn], animations: {
-            self.layer.transform = CATransform3DRotate(transform, CGFloat.pi / 2, 0, 1, 0)
-        }) { _ in
-            self.frontView.isHidden.toggle()
-            self.backView.isHidden.toggle()
+        UIView.animate(withDuration: Constants.flipDuration / 2, delay: 0, options: .curveEaseIn) {
+            self.layer.transform = CATransform3DRotate(transform, .pi / 2, 0, 1, 0)
+        } completion: { _ in
+            self.frontView?.isHidden.toggle()
+            self.backView?.isHidden.toggle()
             
-            UIView.animate(withDuration: Constants.flipDuration, delay: 0, options: [.curveEaseOut]) {
-                self.layer.transform = CATransform3DRotate(transform, self.isFlipped ? CGFloat.pi : 0, 0, 1, 0)
+            UIView.animate(withDuration: Constants.flipDuration / 2, delay: 0, options: .curveEaseOut) {
+                self.layer.transform = CATransform3DRotate(transform, self.isFlipped ? 0 : .pi, 0, 1, 0)
             } completion: { _ in
                 self.isFlipped.toggle()
                 completion()
@@ -78,11 +89,5 @@ class CardView<Front: UIView & ConfigurableView, Back: UIView & ConfigurableView
 // MARK: - Constants
 private enum Constants {
     static let cornerRadius: CGFloat = 25
-    static let flipDuration: TimeInterval = 0.3
-}
-
-#Preview {
-    let view = CardView<TranslationView, TranslationView>(isFlipped: true)
-    view.configure(with: (TranslationModel(text: "яблоко"), TranslationModel(text: "яблоко")))
-    return view
+    static let flipDuration: TimeInterval = 1
 }

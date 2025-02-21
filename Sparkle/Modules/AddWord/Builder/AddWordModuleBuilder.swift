@@ -11,13 +11,11 @@ final class AddWordModuleBuilder {
         let viewController = AddWordViewController()
         let interactor = AddWordInteractor()
         let presenter = AddWordPresenter()
-        let mistralWorker = MistralWorker()
         let textToSpeechWorker = TextToSpeechWorker()
         
         viewController.interactor = interactor
         presenter.view = viewController
         interactor.presenter = presenter
-        interactor.mistralWorker = mistralWorker
         interactor.textToSpeechWorker = textToSpeechWorker
         
         return viewController

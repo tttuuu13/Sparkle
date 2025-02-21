@@ -12,11 +12,11 @@ final class SquareButton: UIButton {
     // MARK: - Initializers
     init(title: String, titleColor: UIColor, image: UIImage?, backgroundColor: UIColor) {
         super.init(frame: .zero)
-        configureUI()
         setTitle(title, for: .normal)
         setTitleColor(titleColor, for: .normal)
         setImage(image, for: .normal)
         self.backgroundColor = backgroundColor
+        configureUI()
     }
     
     @available(*, unavailable)
@@ -28,52 +28,46 @@ final class SquareButton: UIButton {
     private func configureUI() {
         layer.cornerRadius = 20
         clipsToBounds = true
-        
-        setWidth(Constants.Button.size)
-        setHeight(Constants.Button.size)
-        
-        configureTitle()
-        configureImageView()
+        pinWidth(to: heightAnchor)
     }
     
-    private func configureTitle() {
-        titleLabel?.numberOfLines = 0
-        titleLabel?.font = Constants.Title.font
+    override func layoutSubviews() {
+        super.layoutSubviews()
         
-        titleLabel?.pinLeft(to: self, Constants.Title.offset)
-        titleLabel?.pinRight(to: self, Constants.Title.offset)
-        titleLabel?.pinTop(to: self, Constants.Title.offset)
-    }
-    
-    private func configureImageView() {
-        imageView?.setWidth(Constants.Icon.size)
-        imageView?.setHeight(Constants.Icon.size)
-        imageView?.pinRight(to: self, Constants.Icon.offset)
-        imageView?.pinBottom(to: self, Constants.Icon.offset)
+        guard let imageView = imageView, let titleLabel = titleLabel else { return }
+        
+        let buttonWidth = bounds.width
+        let buttonHeight = bounds.height
+        
+        imageView.frame = CGRect(x: buttonWidth * 0.3, y: buttonHeight * 0.3, width: buttonWidth * 0.9, height: buttonWidth * 0.9)
+        
+        let titleLabelSize = titleLabel.sizeThatFits(CGSize(width: buttonWidth * 0.9, height: .greatestFiniteMagnitude))
+        titleLabel.frame = CGRect(x: buttonWidth * 0.05, y: buttonWidth * 0.05, width: buttonWidth, height: titleLabelSize.height)
+        titleLabel.font = Constants.Title.font
+        titleLabel.textAlignment = .left
+        titleLabel.numberOfLines = 0
     }
     
     // MARK: - Constants
     private enum Constants {
         enum Button {
-            static let size: CGFloat = 165
             static let opacity: CGFloat = 0.2
         }
         
         enum Icon {
-            static let size: CGFloat = 130
-            static let offset: CGFloat = -27
             static let opacity: CGFloat = 0.7
         }
         
         enum Title {
             static let font: UIFont = .systemFont(ofSize: 28, weight: .semibold)
-            static let offset: CGFloat = 10
         }
     }
 }
 
-// MARK: - Preview
+@available(iOS 17.0, *)
 #Preview {
     let button = SquareButton(title: "повторить слова", titleColor: .systemBlue, image: UIImage(systemName: "globe"), backgroundColor: .systemBlue.withAlphaComponent(0.2))
+    button.setWidth(160)
+    button.setHeight(160)
     return button
 }

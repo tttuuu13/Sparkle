@@ -7,6 +7,8 @@
 import AVFoundation
 
 final class TextToSpeechWorker {
+    static let shared = TextToSpeechWorker()
+    
     func fetchPronunciation(for text: String, completion: @escaping (Result<URL, Error>) -> Void) {
         // TODO: Add implementation
         completion(.success(URL(string: "https://upload.wikimedia.org/wikipedia/commons/e/ea/En-us-beautiful.ogg")!))
