@@ -8,8 +8,8 @@ import Foundation
 
 // MARK: - Interactor Protocol
 protocol AddWordBusinessLogic {
-    func fetchResult(for word: String, mode: SearchMode)
-    func addWord(_ word: WordModel)
+    func fetchResult(for request: AddWordModels.Request.Search)
+    func addWord(_ request: AddWordModels.Request.Add)
 }
 
 // MARK: - Interactor Implementation
@@ -18,12 +18,13 @@ final class AddWordInteractor: AddWordBusinessLogic {
     var mistralWorker: MistralWorkerProtocol?
     private let wordsStorage = WordsStorage.shared
     
-    func fetchResult(for word: String, mode: SearchMode) {
-        mistralWorker?.getWordModels(for: word, mode: mode) { result in
+    func fetchResult(for request: AddWordModels.Request.Search) {
+        mistralWorker?.getWordModels(for: request.word, mode: request.mode) { result in
             switch result {
             case .success(let wordModels):
                 DispatchQueue.main.async {
-                    self.presenter?.presentResult(wordModels, mode: mode)
+                    let response = AddWordModels.Response.SearchResult(wordModels: wordModels, mode: request.mode)
+                    self.presenter?.presentResult(response)
                 }
             case .failure(let error):
                 DispatchQueue.main.async {
@@ -33,9 +34,9 @@ final class AddWordInteractor: AddWordBusinessLogic {
         }
     }
 
-    func addWord(_ word: WordModel) {
+    func addWord(_ request: AddWordModels.Request.Add) {
         do {
-            try wordsStorage.addWord(word)
+            try wordsStorage.addWord(request.word)
             presenter?.presentWordSaved()
         } catch {
             presenter?.presentError(error)

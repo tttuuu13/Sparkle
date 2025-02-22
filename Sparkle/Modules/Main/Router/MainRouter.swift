@@ -25,7 +25,8 @@ final class MainRouter: MainRoutingLogic {
     }
 
     func routeToDictionary() {
-        
+        let dictionaryVC = DictionaryBuilder.build()
+        viewController?.navigationController?.pushViewController(dictionaryVC, animated: true)
     }
 
     func routeToPractice() {

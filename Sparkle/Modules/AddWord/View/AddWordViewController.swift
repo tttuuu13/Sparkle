@@ -8,7 +8,7 @@
 import UIKit
 
 protocol AddWordDisplayLogic: AnyObject {
-    func displayResult(_ wordModels: [WordModel], mode: SearchMode)
+    func displayResult(_ viewModel: AddWordModels.ViewModel.SearchResult)
     func displayError(_ error: Error)
     func displayWordSaved()
 }
@@ -16,7 +16,7 @@ protocol AddWordDisplayLogic: AnyObject {
 final class AddWordViewController: UIViewController, UITextFieldDelegate {
     // MARK: - Properties
     var interactor: AddWordBusinessLogic?
-    private var buttonState: ButtonActions = .search
+    private var mainButtonAction: ButtonActions = .search
     
     // MARK: - UI Elements
     private var card: CardView = CardView()
@@ -109,22 +109,25 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
         stackView.isHidden = true
         view.addSubview(stackView)
         stackView.setWidth(Constants.Card.size)
-        stackView.setHeight(Constants.Card.size * 1.5)
+        stackView.setHeight(Constants.Card.size + 50)
         stackView.pinTop(to: card)
         stackView.pinCenterX(to: view)
     }
     
     // MARK: - Button Targets
     @objc private func mainButtonTapped() {
-        switch buttonState {
+        switch mainButtonAction {
         case .search:
             if let frontView = card.frontView as? SearchView, let input = frontView.textField.text {
                 mainButton.isEnabled = false
-                interactor?.fetchResult(for: input, mode: frontView.mode)
+                let request = AddWordModels.Request.Search(word: input, mode: frontView.mode)
+                interactor?.fetchResult(for: request)
             }
         case .save:
             if let model = stackView.getTopCardModel().0 as? WordModel {
-                interactor?.addWord(model)
+                let request = AddWordModels.Request.Add(word: model)
+                interactor?.addWord(request)
+                cancelButtonTapped()
             }
         }
     }
@@ -132,14 +135,18 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     @objc private func cancelButtonTapped() {
         cancelButton.isHidden = true
         mainButton.setTitle("Найти", for: .normal)
-        mainButton.setImage(nil, for: .normal)
         mainButton.isEnabled = false
         stackView.collapse { [self] in
+            if let frontView = card.frontView as? SearchView {
+                frontView.textField.text = ""
+            }
+            
             card.backView?.configure(with: stackView.getTopCardModel().0)
             card.isHidden = false
             stackView.isHidden = true
             card.flip {
                 self.mainButton.isEnabled = true
+                self.mainButtonAction = .search
             }
         }
     }
@@ -177,21 +184,21 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
 }
 
 extension AddWordViewController: AddWordDisplayLogic {
-    func displayResult(_ wordModels: [WordModel], mode: SearchMode) {
+    func displayResult(_ viewModel: AddWordModels.ViewModel.SearchResult) {
         cancelButton.isHidden = false
         errorLabel.isHidden = true
-        card.setBackView(to: mode == .translation ? TranslationView() : DefinitionView())
-        if let first = wordModels.first {
+        card.setBackView(to: viewModel.mode == .translation ? TranslationView() : DefinitionView())
+        if let first = viewModel.wordModels.first {
             card.backView?.configure(with: first)
         }
 
         card.flip { [self] in
             card.isHidden = true
             stackView.isHidden = false
-            stackView.configure(with: wordModels.map { ($0, nil) }, mode: mode)
-            mainButton.setTitle("Запомнить", for: .normal)
-            mainButton.setImage(UIImage(systemName: "sparkle"), for: .normal)
+            stackView.configure(with: viewModel.wordModels.map { ($0, nil) }, mode: viewModel.mode)
             mainButton.isEnabled = true
+            mainButton.setTitle("Запомнить", for: .normal)
+            mainButtonAction = .save
             stackView.expand()
         }
     }

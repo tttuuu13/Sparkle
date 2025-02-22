@@ -1,0 +1,7 @@
+{
+    "swift.SDK": "/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk",
+    "swift.path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin",
+    "swift.swiftEnvironmentVariables": {
+        "DEVELOPER_DIR": "/Applications/Xcode.app"
+    }
+}

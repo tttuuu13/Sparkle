@@ -6,7 +6,7 @@
 //
 // MARK: - Presenter Protocol
 protocol AddWordPresentationLogic {
-    func presentResult(_ wordModels: [WordModel], mode: SearchMode)
+    func presentResult(_ response: AddWordModels.Response.SearchResult)
     func presentError(_ error: Error)
     func presentWordSaved()
 }
@@ -15,8 +15,9 @@ protocol AddWordPresentationLogic {
 final class AddWordPresenter: AddWordPresentationLogic {
     weak var viewController: AddWordDisplayLogic?
     
-    func presentResult(_ wordModels: [WordModel], mode: SearchMode) {
-        viewController?.displayResult(wordModels, mode: mode)
+    func presentResult(_ response: AddWordModels.Response.SearchResult) {
+        let viewModel = AddWordModels.ViewModel.SearchResult(wordModels: response.wordModels, mode: response.mode)
+        viewController?.displayResult(viewModel)
     }
     func presentError(_ error: Error) {
         viewController?.displayError(error)

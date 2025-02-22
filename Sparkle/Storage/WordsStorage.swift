@@ -3,7 +3,7 @@ import Foundation
 protocol WordsStorageProtocol {
     func getWords() throws -> [WordModel]
     func addWord(_ word: WordModel) throws
-    func removeWord(_ word: WordModel) throws
+    func deleteWord(_ word: WordModel) throws
     func updateWord(_ word: WordModel) throws
 }
 
@@ -27,7 +27,7 @@ final class WordsStorage: WordsStorageProtocol {
         try saveWords(words)
     }
 
-    func removeWord(_ word: WordModel) throws {
+    func deleteWord(_ word: WordModel) throws {
         var words = try getWords()
         words.removeAll { $0.id == word.id }
         try saveWords(words)
