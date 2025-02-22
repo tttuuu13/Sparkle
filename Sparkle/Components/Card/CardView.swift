@@ -7,10 +7,8 @@
 
 import UIKit
 
-protocol CardFaceModel {}
-
 protocol ConfigurableView: UIView {
-    func configure(with model: CardFaceModel)
+    func configure(with model: Any)
 }
 
 class CardView: UIView {
@@ -31,7 +29,7 @@ class CardView: UIView {
     }
     
     // MARK: - Configuration Method
-    func configure(with models: (CardFaceModel, CardFaceModel?)) {
+    func configure(with models: (Any, Any?)) {
         frontView?.configure(with: models.0)
         if let backModel = models.1 {
             backView?.configure(with: backModel)

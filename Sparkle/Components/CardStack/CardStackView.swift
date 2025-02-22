@@ -12,7 +12,7 @@ final class CardStackView: UIView {
     // MARK: - Fields
     private var mode: SearchMode = .translation
     private var showingViews: [CardView] = []
-    private var models: [(CardFaceModel, CardFaceModel?)] = []
+    private var models: [(Any, Any?)] = []
     private var topCardPosition: CGPoint = .zero
     private var panGestureRecognizer: UIPanGestureRecognizer = UIPanGestureRecognizer()
     private var topCardIndex = 0
@@ -29,7 +29,7 @@ final class CardStackView: UIView {
     }
     
     // MARK: - Configuration Method
-    func configure(with models: [(CardFaceModel, CardFaceModel?)], mode: SearchMode = .translation) {
+    func configure(with models: [(Any, Any?)], mode: SearchMode = .translation) {
         topCardIndex = 0
         showingViews.forEach { $0.removeFromSuperview() }
         showingViews = []
@@ -51,9 +51,9 @@ final class CardStackView: UIView {
             topCard.addGestureRecognizer(panGestureRecognizer)
         }
     }
-    
+
     // MARK: - Public Methods
-    func getTopCardModel() -> (CardFaceModel, CardFaceModel?) {
+    func getTopCardModel() -> (Any, Any?) {
         return models[topCardIndex % models.count]
     }
     
@@ -169,5 +169,11 @@ fileprivate enum Constants {
     enum Card {
         static let shadowOpacity: Float = 0.1
         static let shadowRadius: CGFloat = 45
+    }
+
+    enum Counter {
+        static let font: UIFont = .rounded(ofSize: 20, weight: .bold)
+        static let textColor: UIColor = .systemBlue
+        static let offset: CGFloat = 10
     }
 }

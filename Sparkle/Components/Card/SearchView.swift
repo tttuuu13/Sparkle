@@ -12,14 +12,19 @@ enum SearchMode {
     case translation
     case definition
 }
-struct SearchModel: CardFaceModel {
+struct SearchModel {
     var mode: SearchMode
 }
 
 final class SearchView: UIView, ConfigurableView {    
     // MARK: - Fields
-    var mode: SearchMode = .translation
-    
+    var mode: SearchMode {
+        get {
+            return model?.mode ?? .translation
+        }
+    }
+
+    private var model: SearchModel?
     // MARK: - UI Elements
     let textField: UITextField = UITextField()
     let modeSelectorButton: UIButton = UIButton()
@@ -36,13 +41,15 @@ final class SearchView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: CardFaceModel) {
+    func configure(with model: Any) {
         guard let model = model as? SearchModel else {
             print("View \(self) configured with wrong model type.")
             return
         }
+
+        modeSelectorButton.setImage(model.mode == .translation ? Constants.ModeSelectorButton.translationIcon : Constants.ModeSelectorButton.definitionIcon, for: .normal)
         
-        mode = model.mode
+        self.model = model
     }
     
     // MARK: - UI Configuration
@@ -64,7 +71,7 @@ final class SearchView: UIView, ConfigurableView {
     }
     
     private func configureModeSelectorButton() {
-        modeSelectorButton.setImage(mode == .translation ? Constants.ModeSelectorButton.translationIcon : Constants.ModeSelectorButton.definitionIcon, for: .normal)
+        modeSelectorButton.setImage(Constants.ModeSelectorButton.translationIcon, for: .normal)
         modeSelectorButton.contentVerticalAlignment = .fill
         modeSelectorButton.contentHorizontalAlignment = .fill
         modeSelectorButton.addTarget(self, action: #selector(modeSelectorButtonTapped), for: .touchUpInside)
@@ -78,14 +85,16 @@ final class SearchView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func modeSelectorButtonTapped() {
-        switch mode {
+        switch model?.mode {
         case .translation:
-            mode = .definition
+            model?.mode = .definition
         case .definition:
-            mode = .translation
+            model?.mode = .translation
+        case .none:
+            break
         }
         
-        modeSelectorButton.setImage(mode == .translation ? Constants.ModeSelectorButton.translationIcon : Constants.ModeSelectorButton.definitionIcon, for: .normal)
+        modeSelectorButton.setImage(model?.mode == .translation ? Constants.ModeSelectorButton.translationIcon : Constants.ModeSelectorButton.definitionIcon, for: .normal)
     }
     
     // MARK: - Constants
@@ -100,7 +109,7 @@ final class SearchView: UIView, ConfigurableView {
         }
         
         enum ModeSelectorButton {
-            static let translationIcon: UIImage = UIImage(systemName: "globe.americas.fill")!
+            static let translationIcon: UIImage = UIImage(systemName: "globe")!
             static let definitionIcon: UIImage = UIImage(systemName: "book.circle")!
             static let size: CGFloat = 50
         }

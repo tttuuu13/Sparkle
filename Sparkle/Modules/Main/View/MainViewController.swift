@@ -8,7 +8,10 @@
 import UIKit
 
 class MainViewController: UIViewController {
-    // MARK: - Fields
+    // MARK: - Properties
+    var router: MainRoutingLogic?
+
+    // MARK: - UI Elements
     private var buttonsStack = UIStackView()
     private let profileButton = UIButton()
     private let streakFlame = StreakFlame()
@@ -60,10 +63,29 @@ class MainViewController: UIViewController {
         let rows = [UIStackView(), UIStackView()]
         
         let buttonConfigs = [
-            (Constants.ProgressButton.title, Constants.ProgressButton.titleColor, Constants.ProgressButton.image, Constants.ProgressButton.bgColor),
-            (Constants.AddButton.title, Constants.AddButton.titleColor, Constants.AddButton.image, Constants.AddButton.bgColor),
-            (Constants.DictionaryButton.title, Constants.DictionaryButton.titleColor, Constants.DictionaryButton.image, Constants.DictionaryButton.bgColor),
-            (Constants.PracticeButton.title, Constants.PracticeButton.titleColor, Constants.PracticeButton.image, Constants.PracticeButton.bgColor)
+            (Constants.ProgressButton.title,
+            Constants.ProgressButton.titleColor,
+            Constants.ProgressButton.image,
+            Constants.ProgressButton.bgColor,
+            {[weak self] in self?.router?.routeToProgress()}),
+
+            (Constants.AddButton.title,
+            Constants.AddButton.titleColor,
+            Constants.AddButton.image,
+            Constants.AddButton.bgColor,
+            {[weak self] in self?.router?.routeToAddWord()}),
+            
+            (Constants.DictionaryButton.title,
+            Constants.DictionaryButton.titleColor,
+            Constants.DictionaryButton.image,
+            Constants.DictionaryButton.bgColor,
+            {[weak self] in self?.router?.routeToDictionary()}),
+            
+            (Constants.PracticeButton.title,
+            Constants.PracticeButton.titleColor,
+            Constants.PracticeButton.image,
+            Constants.PracticeButton.bgColor,
+            {[weak self] in self?.router?.routeToPractice()})
         ]
         
         for (row, buttonConfig) in zip(rows, buttonConfigs.chuncked(into: 2)) {
@@ -73,6 +95,7 @@ class MainViewController: UIViewController {
             
             for config in buttonConfig {
                 let button = SquareButton(title: config.0, titleColor: config.1, image: config.2, backgroundColor: config.3)
+                button.addAction(UIAction { _ in config.4() }, for: .touchUpInside)
                 row.addArrangedSubview(button)
             }
         }

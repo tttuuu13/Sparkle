@@ -8,18 +8,9 @@
 import AVFoundation
 import UIKit
 
-struct DefinitionModel: CardFaceModel {
-    var word: String
-    var wordClass: String
-    var definition: String
-    var audioURL: URL?
-    var counter: Counter?
-}
-
 final class DefinitionView: UIView, ConfigurableView {
     // MARK: - Fields
-    private var audioURL: URL?
-    private var model: DefinitionModel?
+    private var model: WordModel?
     private var exampleExpanded: Bool = false
     
     // MARK: - UI Elements
@@ -47,13 +38,13 @@ final class DefinitionView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: CardFaceModel) {
-        guard let model = model as? DefinitionModel else {
+    func configure(with model: Any) {
+        guard let model = model as? WordModel else {
             print("View \(self) configured with wrong model type.")
             return
         }
         
-        wordClassLabel.text = model.wordClass
+        wordClassLabel.text = model.partOfSpeech
         
         let firstPart = NSMutableAttributedString(string: "def: ", attributes: [
             .font: UIFont.italicSystemFont(ofSize: 18),
@@ -66,14 +57,6 @@ final class DefinitionView: UIView, ConfigurableView {
         
         firstPart.append(secondPart)
         definitionLabel.attributedText = firstPart
-        
-        if let audioURL = model.audioURL {
-            self.audioURL = audioURL
-        }
-        
-        if let counter = model.counter {
-            self.cardCounter.text = "\(counter.current)/\(counter.total)"
-        }
         
         self.model = model
     }
@@ -180,10 +163,7 @@ final class DefinitionView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func playSound() {
-        if let url = audioURL {
-            let player = AVPlayer(url: url)
-            player.play()
-        }
+
     }
     
     @objc private func exampleViewTapped() {

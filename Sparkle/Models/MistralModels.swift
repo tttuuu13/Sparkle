@@ -6,8 +6,6 @@
 //
 import Foundation
 
-import Foundation
-
 struct MistralResponse: Decodable {
     let id: String
     let object: String
@@ -38,18 +36,4 @@ struct Message: Decodable {
         case toolCalls = "tool_calls"
         case content
     }
-}
-
-struct TranslationResponse: Decodable {
-    let transcription: String
-    let translations: [String]
-}
-
-struct DefinitionResponse: Decodable {
-    let definitions: [Definition]
-}
-
-struct Definition: Decodable {
-    let wordClass: String
-    let definition: String
 }

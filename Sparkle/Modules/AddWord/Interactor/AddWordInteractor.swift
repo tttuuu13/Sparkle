@@ -7,22 +7,23 @@
 import Foundation
 
 // MARK: - Interactor Protocol
-protocol AddWordInteractorProtocol {
-    func fetchTranslations(for word: String)
-    func fetchDefinitions(for word: String)
+protocol AddWordBusinessLogic {
+    func fetchResult(for word: String, mode: SearchMode)
+    func addWord(_ word: WordModel)
 }
 
 // MARK: - Interactor Implementation
-final class AddWordInteractor: AddWordInteractorProtocol {
-    var presenter: AddWordPresenterProtocol?
-    var textToSpeechWorker: TextToSpeechWorker?
+final class AddWordInteractor: AddWordBusinessLogic {
+    var presenter: AddWordPresentationLogic?
+    var mistralWorker: MistralWorkerProtocol?
+    private let wordsStorage = WordsStorage.shared
     
-    func fetchTranslations(for word: String) {
-        MistralWorker.shared.getTranslations(for: word) { result in
+    func fetchResult(for word: String, mode: SearchMode) {
+        mistralWorker?.getWordModels(for: word, mode: mode) { result in
             switch result {
-            case .success(let translations):
+            case .success(let wordModels):
                 DispatchQueue.main.async {
-                    self.presenter?.presentTranslations(translations)
+                    self.presenter?.presentResult(wordModels, mode: mode)
                 }
             case .failure(let error):
                 DispatchQueue.main.async {
@@ -31,19 +32,13 @@ final class AddWordInteractor: AddWordInteractorProtocol {
             }
         }
     }
-    
-    func fetchDefinitions(for word: String) {
-        MistralWorker.shared.getDefinitions(for: word) { result in
-            switch result {
-            case .success(let definitions):
-                DispatchQueue.main.async {
-                    self.presenter?.presentDefinitions(definitions)
-                }
-            case .failure(let error):
-                DispatchQueue.main.async {
-                    self.presenter?.presentError(error)
-                }
-            }
+
+    func addWord(_ word: WordModel) {
+        do {
+            try wordsStorage.addWord(word)
+            presenter?.presentWordSaved()
+        } catch {
+            presenter?.presentError(error)
         }
     }
 }

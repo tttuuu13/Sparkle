@@ -7,14 +7,16 @@
 
 import UIKit
 
-protocol AddWordPresenterOutput: AnyObject {
-    func displayTranslations(_ translations: [TranslationModel])
-    func displayDefinitions(_ definitions: [DefinitionModel])
+protocol AddWordDisplayLogic: AnyObject {
+    func displayResult(_ wordModels: [WordModel], mode: SearchMode)
     func displayError(_ error: Error)
+    func displayWordSaved()
 }
 
 final class AddWordViewController: UIViewController, UITextFieldDelegate {
-    var interactor: AddWordInteractor?
+    // MARK: - Properties
+    var interactor: AddWordBusinessLogic?
+    private var buttonState: ButtonActions = .search
     
     // MARK: - UI Elements
     private var card: CardView = CardView()
@@ -48,10 +50,11 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     
     private func configureCard() {
         let searchView = SearchView()
+        searchView.configure(with: SearchModel(mode: .translation))
         searchView.textField.delegate = self
         card.setFrontView(to: searchView)
         card.setBackView(to: TranslationView())
-        card.configure(with: (SearchModel(mode: .translation), TranslationModel(text: "")))
+        card.configure(with: (SearchModel(mode: .translation), nil))
         view.addSubview(card)
 
         card.layer.shadowOpacity = 0.1
@@ -87,7 +90,7 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     }
     
     private func configureMainButton() {
-        mainButton.setTitle("Перевести", for: .normal)
+        mainButton.setTitle("Найти", for: .normal)
         mainButton.setTitleColor(.white, for: .normal)
         mainButton.tintColor = .white
         mainButton.titleLabel?.font = Constants.SearchButton.font
@@ -113,20 +116,22 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     
     // MARK: - Button Targets
     @objc private func mainButtonTapped() {
-        if let frontView = card.frontView as? SearchView, let input = frontView.textField.text {
-            mainButton.isEnabled = false
-            switch frontView.mode {
-            case .translation:
-                self.interactor?.fetchTranslations(for: input)
-            case .definition:
-                self.interactor?.fetchDefinitions(for: input)
+        switch buttonState {
+        case .search:
+            if let frontView = card.frontView as? SearchView, let input = frontView.textField.text {
+                mainButton.isEnabled = false
+                interactor?.fetchResult(for: input, mode: frontView.mode)
+            }
+        case .save:
+            if let model = stackView.getTopCardModel().0 as? WordModel {
+                interactor?.addWord(model)
             }
         }
     }
     
     @objc private func cancelButtonTapped() {
         cancelButton.isHidden = true
-        mainButton.setTitle("Перевести", for: .normal)
+        mainButton.setTitle("Найти", for: .normal)
         mainButton.setImage(nil, for: .normal)
         mainButton.isEnabled = false
         stackView.collapse { [self] in
@@ -158,7 +163,7 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
         
         enum ErrorLabel {
             static let font: UIFont = UIFont.systemFont(ofSize: 18, weight: .medium)
-            static let textColor: UIColor = UIColor(red: 255, green: 149 / 255, blue: 0, alpha: 1)
+            static let textColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
         }
         
         enum SearchButton {
@@ -171,39 +176,19 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     }
 }
 
-extension AddWordViewController: AddWordPresenterOutput {
-    func displayTranslations(_ translations: [TranslationModel]) {
+extension AddWordViewController: AddWordDisplayLogic {
+    func displayResult(_ wordModels: [WordModel], mode: SearchMode) {
         cancelButton.isHidden = false
         errorLabel.isHidden = true
-        card.setBackView(to: TranslationView())
-        if let first = translations.first {
+        card.setBackView(to: mode == .translation ? TranslationView() : DefinitionView())
+        if let first = wordModels.first {
             card.backView?.configure(with: first)
         }
-        
-        card.flip { [self] in
-            card.isHidden = true
-            stackView.isHidden = false
-            stackView.configure(with: translations.map { ($0, nil) }, mode: .translation)
-            mainButton.setTitle("Запомнить", for: .normal)
-            mainButton.setImage(UIImage(systemName: "sparkle"), for: .normal)
-            mainButton.isEnabled = true
-            stackView.expand()
-        }
-    }
-    
-    func displayDefinitions(_ definitions: [DefinitionModel]) {
-        cancelButton.isHidden = false
-        errorLabel.isHidden = true
-        card.setBackView(to: DefinitionView())
 
-        if let first = definitions.first {
-            card.backView?.configure(with: first)
-        }
-        
         card.flip { [self] in
             card.isHidden = true
             stackView.isHidden = false
-            stackView.configure(with: definitions.map { ($0, nil) }, mode: .definition)
+            stackView.configure(with: wordModels.map { ($0, nil) }, mode: mode)
             mainButton.setTitle("Запомнить", for: .normal)
             mainButton.setImage(UIImage(systemName: "sparkle"), for: .normal)
             mainButton.isEnabled = true
@@ -216,9 +201,12 @@ extension AddWordViewController: AddWordPresenterOutput {
         errorLabel.isHidden = false
         mainButton.isEnabled = true
     }
+
+    func displayWordSaved() {}
+
 }
 
 @available(iOS 17.0, *)
 #Preview {
-    AddWordModuleBuilder.build()
+    AddWordBuilder.build()
 }

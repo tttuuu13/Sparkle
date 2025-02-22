@@ -6,17 +6,17 @@
 //
 import UIKit
 
-final class AddWordModuleBuilder {
+final class AddWordBuilder {
     static func build() -> UIViewController {
         let viewController = AddWordViewController()
         let interactor = AddWordInteractor()
         let presenter = AddWordPresenter()
-        let textToSpeechWorker = TextToSpeechWorker()
-        
+        let mistralWorker = MistralWorker()
+
         viewController.interactor = interactor
-        presenter.view = viewController
+        presenter.viewController = viewController
         interactor.presenter = presenter
-        interactor.textToSpeechWorker = textToSpeechWorker
+        interactor.mistralWorker = mistralWorker
         
         return viewController
     }

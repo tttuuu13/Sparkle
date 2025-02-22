@@ -8,13 +8,6 @@
 import UIKit
 import AVFoundation
 
-// MARK: - Translation Model
-struct TranslationModel: CardFaceModel {
-    var text: String
-    var transcription: String?
-    var audioURL: URL?
-    var counter: Counter?
-}
 
 struct Counter {
     var current: Int
@@ -23,9 +16,8 @@ struct Counter {
 
 // MARK: - Translation View
 final class TranslationView: UIView, ConfigurableView {
-    typealias Model = TranslationModel
     // MARK: - Fields
-    private var audioURL: URL?
+    private var model: WordModel?
     
     // MARK: - UI Elements
     private let textLabel: UILabel = UILabel()
@@ -45,21 +37,16 @@ final class TranslationView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: CardFaceModel) {
-        guard let model = model as? TranslationModel else {
+    func configure(with model: Any) {
+        guard let model = model as? WordModel else {
             print("View \(self) configured with wrong model type.")
             return
         }
         
-        textLabel.text = model.text
+        textLabel.text = model.translation
         transcriptionLabel.text = model.transcription
-        if let audioURL = model.audioURL {
-            self.audioURL = audioURL
-        }
-        
-        if let counter = model.counter {
-            self.cardCounter.text = "\(counter.current)/\(counter.total)"
-        }
+
+        self.model = model
     }
     
     // MARK: - UI Configuration
@@ -109,10 +96,6 @@ final class TranslationView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func playSound() {
-        if let url = audioURL {
-            let player = AVPlayer(url: url)
-            player.play()
-        }
     }
     
     // MARK: - Constants
@@ -141,11 +124,4 @@ final class TranslationView: UIView, ConfigurableView {
             static let textColor: UIColor = .systemBlue
         }
     }
-}
-
-@available(iOS 17.0, *)
-#Preview {
-    let view = TranslationView()
-    view.configure(with: TranslationModel(text: "яблоко"))
-    return view
 }
