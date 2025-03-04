@@ -9,9 +9,27 @@ struct WordModel: Codable {
     let definition: String
 
     var addedDate: Date?
+    var isSmartShuffle: Bool = false
     var lastReviewDate: Date?
     var reviewCount: Int?
     
+    init(id: UUID,
+         word: String, 
+         partOfSpeech: String, 
+         transcription: String, 
+         translation: String, 
+         definition: String,
+         isSmartShuffle: Bool = false) {
+        
+        self.id = id
+        self.word = word
+        self.partOfSpeech = partOfSpeech
+        self.transcription = transcription
+        self.translation = translation
+        self.definition = definition
+        self.isSmartShuffle = isSmartShuffle
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         

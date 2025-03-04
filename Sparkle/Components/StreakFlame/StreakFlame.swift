@@ -8,10 +8,28 @@
 import UIKit
 
 final class StreakFlame: UIView {
-    // MARK: - Fields
+    // MARK: - Constants
+    private enum Constants {
+        enum Flame {
+            static let fillColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
+        }
+        
+        enum Counter {
+            static let font: UIFont = .rounded(ofSize: 32, weight: .black)
+            static let color: UIColor = UIColor(red: 1, green: 204 / 255, blue: 0, alpha: 1)
+            static let shadowOffset: CGSize = .zero
+            static let shadowOpacity: Float = 1
+        }
+    }
+
+    // MARK: - Properties
     private let shapeLayer: CAShapeLayer = CAShapeLayer()
     private let counterLabel: UILabel = UILabel()
-    public var counter: Int = 12
+    public var counter: Int = 0 {
+        didSet {
+            counterLabel.text = String(counter)
+        }
+    }
     
     // MARK: - Initializers
     override init(frame: CGRect) {
@@ -66,20 +84,6 @@ final class StreakFlame: UIView {
         path.close()
         
         return path
-    }
-    
-    // MARK: - Constants
-    private struct Constants {
-        struct Flame {
-            static let fillColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
-        }
-        
-        struct Counter {
-            static let font: UIFont = .rounded(ofSize: 32, weight: .black)
-            static let color: UIColor = UIColor(red: 1, green: 204 / 255, blue: 0, alpha: 1)
-            static let shadowOffset: CGSize = .zero
-            static let shadowOpacity: Float = 1
-        }
     }
 }
 

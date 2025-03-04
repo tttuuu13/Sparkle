@@ -16,6 +16,8 @@ protocol AddWordBusinessLogic {
 final class AddWordInteractor: AddWordBusinessLogic {
     var presenter: AddWordPresentationLogic?
     var mistralWorker: MistralWorkerProtocol?
+    private var wordModels: [WordModel] = []
+    private var wordsInitialCount: Int = 0
     private let wordsStorage = WordsStorage.shared
     
     func fetchResult(for request: AddWordModels.Request.Search) {
@@ -23,7 +25,8 @@ final class AddWordInteractor: AddWordBusinessLogic {
             switch result {
             case .success(let wordModels):
                 DispatchQueue.main.async {
-                    let response = AddWordModels.Response.SearchResult(wordModels: wordModels, mode: request.mode)
+                    self.wordModels = wordModels
+                    self.wordsInitialCount = wordModels.count
                     self.presenter?.presentResult(response)
                 }
             case .failure(let error):
@@ -42,4 +45,16 @@ final class AddWordInteractor: AddWordBusinessLogic {
             presenter?.presentError(error)
         }
     }
+}
+
+extension AddWordInteractor: CardStackViewDataSource {
+    func numberOfCards(in cardStack: CardStackView) -> Int {
+        wordModels.count
+    }
+    
+    func cardStack(_ cardStack: CardStackView, wordModelAt index: Int) -> WordModel {
+        wordModels[index]
+    }
+    
+    
 }

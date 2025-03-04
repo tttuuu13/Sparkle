@@ -16,7 +16,35 @@ struct Counter {
 
 // MARK: - Translation View
 final class TranslationView: UIView, ConfigurableView {
-    // MARK: - Fields
+    // MARK: - Constants
+    private enum Constants {
+        enum View {
+            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
+        }
+        
+        enum TextLabel {
+            static let font: UIFont = .systemFont(ofSize: 30, weight: .medium)
+            static let offset: CGFloat = 10
+        }
+        
+        enum TranscriptionLabel {
+            static let font: UIFont = .systemFont(ofSize: 25, weight: .medium)
+            static let textColor: UIColor = .secondaryLabel
+            static let offset: CGFloat = 5
+        }
+        
+        enum SoundButton {
+            static let size: CGFloat = 50
+        }
+        
+        enum CardNumber {
+            static let font: UIFont = .rounded(ofSize: 20, weight: .bold)
+            static let textColor: UIColor = .systemBlue
+        }
+    }
+
+    // MARK: - Properties
     private var model: WordModel?
     
     // MARK: - UI Elements
@@ -37,12 +65,7 @@ final class TranslationView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: Any) {
-        guard let model = model as? WordModel else {
-            print("View \(self) configured with wrong model type.")
-            return
-        }
-        
+    func configure(with model: WordModel) {
         textLabel.text = model.translation
         transcriptionLabel.text = model.transcription
 
@@ -52,7 +75,8 @@ final class TranslationView: UIView, ConfigurableView {
     // MARK: - UI Configuration
     private func configureUI() {
         layoutMargins = Constants.View.insets
-        backgroundColor = .white
+        backgroundColor = Constants.View.backgroundColor
+        
         configureTextLabel()
         configureTranscriptionLabel()
         configureSoundButton()
@@ -96,32 +120,5 @@ final class TranslationView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func playSound() {
-    }
-    
-    // MARK: - Constants
-    private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        }
-        
-        enum TextLabel {
-            static let font: UIFont = .systemFont(ofSize: 30, weight: .medium)
-            static let offset: CGFloat = 10
-        }
-        
-        enum TranscriptionLabel {
-            static let font: UIFont = .systemFont(ofSize: 25, weight: .medium)
-            static let textColor: UIColor = .secondaryLabel
-            static let offset: CGFloat = 5
-        }
-        
-        enum SoundButton {
-            static let size: CGFloat = 50
-        }
-        
-        enum CardNumber {
-            static let font: UIFont = .rounded(ofSize: 20, weight: .bold)
-            static let textColor: UIColor = .systemBlue
-        }
     }
 }

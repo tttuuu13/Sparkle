@@ -8,28 +8,36 @@
 import Foundation
 
 enum AddWordModels {
-    enum Request {
-        struct Search {
+    enum Search {
+        struct Request {
             let word: String
-            let mode: SearchMode
+            let mode: DisplayMode
         }
+        
+        struct Response {
+            enum State {
+                case loading
+                case found
+                case failure(error: Error)
+            }
 
-        struct Add {
-            let word: WordModel
+            let state: State
+            let mode: DisplayMode
         }
-    }
-
-    enum Response {
-        struct SearchResult {
-            let wordModels: [WordModel]
-            let mode: SearchMode
-        }
-    }
-
-    enum ViewModel {
-        struct SearchResult {
-            let wordModels: [WordModel]
-            let mode: SearchMode
+        
+        struct ViewModel {
+            struct MainButton {
+                let title: String
+                let isEnabled: Bool
+            }
+            
+            struct CancelButton {
+                let isHidden: Bool
+            }
+            
+            let mode: DisplayMode
+            let firstWordModel: WordModel?
+            let errorMessage: String?
         }
     }
 }

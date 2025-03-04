@@ -14,6 +14,30 @@ protocol AddWordDisplayLogic: AnyObject {
 }
 
 final class AddWordViewController: UIViewController, UITextFieldDelegate {
+    // MARK: - Constants
+    private enum Constants {
+        enum View {
+            static let bgColor: UIColor = UIColor(white: 0.95, alpha: 1)
+        }
+        
+        enum Card {
+            static let size: CGFloat = 320
+        }
+        
+        enum ErrorLabel {
+            static let font: UIFont = UIFont.systemFont(ofSize: 18, weight: .medium)
+            static let textColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
+        }
+        
+        enum MainButton {
+            static let width: CGFloat = 180
+            static let height: CGFloat = 60
+            static let font: UIFont = UIFont.systemFont(ofSize: 18, weight: .regular)
+            static let cornerRadius: CGFloat = 15
+            static let bgColor: UIColor = .systemGreen
+        }
+    }
+    
     // MARK: - Properties
     var interactor: AddWordBusinessLogic?
     private var mainButtonAction: ButtonActions = .search
@@ -50,11 +74,10 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     
     private func configureCard() {
         let searchView = SearchView()
-        searchView.configure(with: SearchModel(mode: .translation))
         searchView.textField.delegate = self
         card.setFrontView(to: searchView)
         card.setBackView(to: TranslationView())
-        card.configure(with: (SearchModel(mode: .translation), nil))
+        card.configure(with: WordModel(id: UUID(), word: "", partOfSpeech: "", transcription: "", translation: "", definition: ""))
         view.addSubview(card)
 
         card.layer.shadowOpacity = 0.1
@@ -93,14 +116,14 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
         mainButton.setTitle("Найти", for: .normal)
         mainButton.setTitleColor(.white, for: .normal)
         mainButton.tintColor = .white
-        mainButton.titleLabel?.font = Constants.SearchButton.font
-        mainButton.backgroundColor = Constants.SearchButton.bgColor
-        mainButton.layer.cornerRadius = Constants.SearchButton.cornerRadius
+        mainButton.titleLabel?.font = Constants.MainButton.font
+        mainButton.backgroundColor = Constants.MainButton.bgColor
+        mainButton.layer.cornerRadius = Constants.MainButton.cornerRadius
         mainButton.addTarget(self, action: #selector(mainButtonTapped), for: .touchUpInside)
         
         view.addSubview(mainButton)
-        mainButton.setWidth(Constants.SearchButton.width)
-        mainButton.setHeight(Constants.SearchButton.height)
+        mainButton.setWidth(Constants.MainButton.width)
+        mainButton.setHeight(Constants.MainButton.height)
         mainButton.pinBottom(to: cancelButton.topAnchor, 10)
         mainButton.pinCenterX(to: view)
     }
@@ -116,39 +139,42 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
     
     // MARK: - Button Targets
     @objc private func mainButtonTapped() {
-        switch mainButtonAction {
-        case .search:
-            if let frontView = card.frontView as? SearchView, let input = frontView.textField.text {
-                mainButton.isEnabled = false
-                let request = AddWordModels.Request.Search(word: input, mode: frontView.mode)
-                interactor?.fetchResult(for: request)
-            }
-        case .save:
-            if let model = stackView.getTopCardModel().0 as? WordModel {
-                let request = AddWordModels.Request.Add(word: model)
-                interactor?.addWord(request)
-                cancelButtonTapped()
-            }
-        }
+         switch mainButtonAction {
+         case .search:
+             if let frontView = card.frontView as? SearchView, let input = frontView.textField.text {
+                 mainButton.isEnabled = false
+                 let request = AddWordModels.Request.Search(word: input, mode: frontView.mode)
+                 interactor?.fetchResult(for: request)
+             }
+         case .save:
+             if let model = stackView.getTopWordModel() {
+                 let request = AddWordModels.Request.Add(word: model)
+                 interactor?.addWord(request)
+                 cancelButtonTapped()
+             }
+         }
     }
     
     @objc private func cancelButtonTapped() {
-        cancelButton.isHidden = true
-        mainButton.setTitle("Найти", for: .normal)
-        mainButton.isEnabled = false
-        stackView.collapse { [self] in
-            if let frontView = card.frontView as? SearchView {
-                frontView.textField.text = ""
-            }
+         cancelButton.isHidden = true
+         mainButton.setTitle("Найти", for: .normal)
+         mainButton.isEnabled = false
+         stackView.collapse { [self] in
+             if let frontView = card.frontView as? SearchView {
+                 frontView.textField.text = ""
+             }
             
-            card.backView?.configure(with: stackView.getTopCardModel().0)
-            card.isHidden = false
-            stackView.isHidden = true
-            card.flip {
-                self.mainButton.isEnabled = true
-                self.mainButtonAction = .search
-            }
-        }
+             if let topCardWordModel = stackView.getTopWordModel() {
+                 card.backView?.configure(with: topCardWordModel)
+             }
+            
+             card.isHidden = false
+             stackView.isHidden = true
+             card.flip {
+                 self.mainButton.isEnabled = true
+                 self.mainButtonAction = .search
+             }
+         }
     }
     
     // MARK: - UITextFieldDelegate Implementation
@@ -157,50 +183,24 @@ final class AddWordViewController: UIViewController, UITextFieldDelegate {
         mainButtonTapped()
         return true
     }
-    
-    // MARK: - Constants
-    private enum Constants {
-        enum View {
-            static let bgColor: UIColor = UIColor(white: 0.95, alpha: 1)
-        }
-        
-        enum Card {
-            static let size: CGFloat = 320
-        }
-        
-        enum ErrorLabel {
-            static let font: UIFont = UIFont.systemFont(ofSize: 18, weight: .medium)
-            static let textColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
-        }
-        
-        enum SearchButton {
-            static let width: CGFloat = 180
-            static let height: CGFloat = 60
-            static let font: UIFont = UIFont.systemFont(ofSize: 18, weight: .regular)
-            static let cornerRadius: CGFloat = 15
-            static let bgColor: UIColor = .systemGreen
-        }
-    }
 }
 
 extension AddWordViewController: AddWordDisplayLogic {
-    func displayResult(_ viewModel: AddWordModels.ViewModel.SearchResult) {
-        cancelButton.isHidden = false
-        errorLabel.isHidden = true
-        card.setBackView(to: viewModel.mode == .translation ? TranslationView() : DefinitionView())
-        if let first = viewModel.wordModels.first {
-            card.backView?.configure(with: first)
-        }
+    func displayResult(_ viewModel: AddWordModels.Search.ViewModel) {
+         cancelButton.isHidden = false
+         errorLabel.isHidden = true
+         card.setBackView(to: viewModel.mode == .translation ? TranslationView() : DefinitionView())
+        if let first = viewModel.firstWordModel {
+             card.backView?.configure(with: first)
+         }
 
-        card.flip { [self] in
-            card.isHidden = true
-            stackView.isHidden = false
-            stackView.configure(with: viewModel.wordModels.map { ($0, nil) }, mode: viewModel.mode)
-            mainButton.isEnabled = true
-            mainButton.setTitle("Запомнить", for: .normal)
-            mainButtonAction = .save
-            stackView.expand()
-        }
+         card.flip { [self] in
+             card.isHidden = true
+             stackView.isHidden = false
+             mainButton.isEnabled = true
+             mainButton.setTitle(viewModel., for: .normal)
+             mainButtonAction = .save
+         }
     }
     
     func displayError(_ error: Error) {
@@ -211,6 +211,12 @@ extension AddWordViewController: AddWordDisplayLogic {
 
     func displayWordSaved() {}
 
+}
+
+extension AddWordViewController: CardStackViewDelegate {
+    func cardStack(_ cardStack: CardStackView, didSwipeCardIndex index: Int, in direction: CardStackView.SwipeDirection) {
+        <#code#>
+    }
 }
 
 @available(iOS 17.0, *)

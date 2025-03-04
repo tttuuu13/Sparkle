@@ -30,7 +30,8 @@ final class MainRouter: MainRoutingLogic {
     }
 
     func routeToPractice() {
-        
+        let practiceVC = PracticeBuilder.build()
+        viewController?.navigationController?.pushViewController(practiceVC, animated: true)
     }
 
     func routeToProgress() {

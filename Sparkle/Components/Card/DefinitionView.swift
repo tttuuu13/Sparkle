@@ -9,7 +9,52 @@ import AVFoundation
 import UIKit
 
 final class DefinitionView: UIView, ConfigurableView {
-    // MARK: - Fields
+    // MARK: - Constants
+    private enum Constants {
+        enum View {
+            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
+        }
+        
+        enum WordClassLabel {
+            static let font: UIFont = .systemFont(ofSize: 14, weight: .regular)
+            static let textColor: UIColor = .white
+            static let backgroundColor: UIColor = .systemBlue
+            static let size: CGSize = CGSize(width: 82, height: 26)
+        }
+        
+        enum DefinitionLabel {
+            static let font: UIFont = .systemFont(ofSize: 18, weight: .regular)
+            static let textColor: UIColor = .white
+            static let offset: CGFloat = 10
+        }
+        
+        enum ExampleView {
+            static let backgroundColor: UIColor = .systemBlue.withAlphaComponent(0.1)
+            static let iconColor: UIColor = UIColor.systemBlue
+            static let borderWidth: CGFloat = 1
+            static let size: CGSize = CGSize(width: 50, height: 50)
+            static let offset: CGFloat = 10
+            static let cornerRadius: CGFloat = 14
+            static let insets: UIEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+            
+            enum Text {
+                static let font: UIFont = .systemFont(ofSize: 18, weight: .regular)
+                static let color: UIColor = .systemBlue
+            }
+        }
+        
+        enum SoundButton {
+            static let size: CGFloat = 50
+        }
+        
+        enum CardNumber {
+            static let font: UIFont = .rounded(ofSize: 20, weight: .bold)
+            static let textColor: UIColor = .systemBlue
+        }
+    }
+    
+    // MARK: - Properties
     private var model: WordModel?
     private var exampleExpanded: Bool = false
     
@@ -38,12 +83,7 @@ final class DefinitionView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: Any) {
-        guard let model = model as? WordModel else {
-            print("View \(self) configured with wrong model type.")
-            return
-        }
-        
+    func configure(with model: WordModel) {
         wordClassLabel.text = model.partOfSpeech
         
         let firstPart = NSMutableAttributedString(string: "def: ", attributes: [
@@ -59,12 +99,16 @@ final class DefinitionView: UIView, ConfigurableView {
         definitionLabel.attributedText = firstPart
         
         self.model = model
+        
+        if exampleExpanded {
+            hideExample()
+        }
     }
     
     // MARK: - UI Configuration
     private func configureUI() {
         layoutMargins = Constants.View.insets
-        backgroundColor = .white
+        backgroundColor = Constants.View.backgroundColor
         
         configureWordClassLabel()
         configureDefinitionLabel()
@@ -217,49 +261,6 @@ final class DefinitionView: UIView, ConfigurableView {
             self.layoutIfNeeded()
         } completion: { _ in
             self.exampleExpanded.toggle()
-        }
-    }
-    
-    // MARK: - Constants
-    private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        }
-        
-        enum WordClassLabel {
-            static let font: UIFont = .systemFont(ofSize: 14, weight: .regular)
-            static let textColor: UIColor = .white
-            static let backgroundColor: UIColor = .systemBlue
-            static let size: CGSize = CGSize(width: 82, height: 26)
-        }
-        
-        enum DefinitionLabel {
-            static let font: UIFont = .systemFont(ofSize: 18, weight: .regular)
-            static let textColor: UIColor = .white
-            static let offset: CGFloat = 10
-        }
-        
-        enum ExampleView {
-            static let backgroundColor: UIColor = .systemBlue.withAlphaComponent(0.1)
-            static let iconColor: UIColor = UIColor.systemBlue
-            static let borderWidth: CGFloat = 1
-            static let size: CGSize = CGSize(width: 50, height: 50)
-            static let offset: CGFloat = 10
-            static let cornerRadius: CGFloat = 14
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
-            enum Text {
-                static let font: UIFont = .systemFont(ofSize: 18, weight: .regular)
-                static let color: UIColor = .systemBlue
-            }
-        }
-        
-        enum SoundButton {
-            static let size: CGFloat = 50
-        }
-        
-        enum CardNumber {
-            static let font: UIFont = .rounded(ofSize: 20, weight: .bold)
-            static let textColor: UIColor = .systemBlue
         }
     }
 }
