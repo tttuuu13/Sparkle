@@ -7,19 +7,14 @@
 
 import UIKit
 
-enum DisplayMode {
-    case translation
-    case definition
+struct SearchViewModel: CardFaceViewModel {
+    let word: String
+    var mode: CardFaceType
 }
 
-final class SearchView: UIView, ConfigurableView {
+final class SearchView: CardFaceView {
     // MARK: - Constants
     private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
-        }
-        
         enum TextField {
             static let font: UIFont = UIFont.systemFont(ofSize: 30, weight: .medium)
             static let placeholder: String = "слово"
@@ -33,22 +28,16 @@ final class SearchView: UIView, ConfigurableView {
     }
     
     // MARK: - Properties
-    var mode: DisplayMode = .translation {
-        didSet {
-            let image = mode == .translation ? Constants.ModeSelectorButton.translationIcon : Constants.ModeSelectorButton.definitionIcon
-            modeSelectorButton.setImage(image, for: .normal)
-        }
-    }
-
-    private var model: WordModel?
+    var onModeSelectorButtonTap: (() -> Void)?
+    private var viewModel: SearchViewModel?
     
     // MARK: - UI Elements
     let textField: UITextField = UITextField()
     let modeSelectorButton: UIButton = UIButton()
     
     // MARK: - Initializers
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configureUI()
     }
     
@@ -58,14 +47,15 @@ final class SearchView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: WordModel) {
-        self.model = model
+    override func configure(with viewModel: CardFaceViewModel) {
+        guard let viewModel = viewModel as? SearchViewModel else { return }
+
+        textField.text = viewModel.word
+        self.viewModel = viewModel
     }
     
     // MARK: - UI Configuration
     private func configureUI() {
-        layoutMargins = Constants.View.insets
-        backgroundColor = Constants.View.backgroundColor
         configureTextField()
         configureModeSelectorButton()
     }
@@ -95,6 +85,6 @@ final class SearchView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func modeSelectorButtonTapped() {
-        mode = mode == .translation ? .definition : .translation
+        onModeSelectorButtonTap?()
     }
 }

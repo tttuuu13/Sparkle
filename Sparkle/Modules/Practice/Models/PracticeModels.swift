@@ -46,7 +46,7 @@ enum PracticeModel {
 
     enum HandleTopCardSwipe {
         struct Request {
-            let direction: CardStackView.SwipeDirection
+            let direction: SwipeDirection
         }
 
         struct Response {
@@ -67,6 +67,21 @@ enum PracticeModel {
         
         struct ViewModel {
             let progress: Float
+        }
+    }
+
+    enum FinishPractice {
+        struct Request {}
+
+        struct Response {
+            let wordsPracticed: Int
+            let wordsTotal: Int
+        }
+
+        struct ViewModel {
+            let progress: Double
+            let wordsPracticed: Int
+            let wordsTotal: Int
         }
     }
 }

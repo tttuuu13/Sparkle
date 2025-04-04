@@ -12,10 +12,17 @@ final class PracticeBuilder {
         let viewController = PracticeViewController()
         let interactor = PracticeInteractor()
         let presenter = PracticePresenter()
+        let router = PracticeRouter()
+        let llmWorker = MistralWorker()
+        let wordsManager = WordsManager()
 
         viewController.interactor = interactor
+        viewController.router = router
         interactor.presenter = presenter
+        interactor.LLMWorker = llmWorker
+        interactor.wordsManager = wordsManager
         presenter.viewController = viewController
+        router.viewController = viewController
 
         return viewController
     }

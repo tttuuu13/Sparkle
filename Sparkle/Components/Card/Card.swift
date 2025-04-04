@@ -7,12 +7,62 @@
 
 import UIKit
 
-// MARK: - ConfigurableView Protocol
-protocol ConfigurableView {
-    func configure(with model: WordModel)
+struct CardViewModel {
+    let wordModel: WordModel
+    var frontType: CardFaceType
+    var backType: CardFaceType
+    var isFlipped: Bool = false
+    var isSmartShuffle: Bool = false
+
+    func createFrontViewModel() -> CardFaceViewModel {
+        createViewModel(for: frontType)
+    }
+    
+    func createBackViewModel() -> CardFaceViewModel {
+        createViewModel(for: backType)
+    }
+    
+    func createFrontView() -> CardFaceView {
+        switch frontType {
+        case .word:
+            return WordView()
+        case .search:
+            return SearchView()
+        case .definition:
+            return DefinitionView()
+        case .translation:
+            return TranslationView()
+        }
+    }
+    
+    func createBackView() -> CardFaceView {
+        switch backType {
+        case .word:
+            return WordView()
+        case .search:
+            return SearchView()
+        case .definition:
+            return DefinitionView()
+        case .translation:
+            return TranslationView()
+        }
+    }
+    
+    private func createViewModel(for type: CardFaceType) -> CardFaceViewModel {
+        switch type {
+        case .word:
+            return WordViewModel(word: wordModel.word)
+        case .search:
+            return SearchViewModel(word: wordModel.word, mode: .translation)
+        case .definition:
+            return DefinitionViewModel(word: wordModel.word, wordClass: wordModel.partOfSpeech, definition: wordModel.definition)
+        case .translation:
+            return TranslationViewModel(word: wordModel.word, transcription: wordModel.transcription, translation: wordModel.translation)
+        }
+    }
 }
 
-class CardView: UIView {
+final class Card: UIView {
     // MARK: - Constants
     private enum Constants {
         static let cornerRadius: CGFloat = 25
@@ -20,20 +70,23 @@ class CardView: UIView {
     }
 
     // MARK: - Properties
-    var model: WordModel?
+    var viewModel: CardViewModel?
     var isFlipped: Bool = false
-    var frontView: (any UIView & ConfigurableView)? {
+    var frontView: CardFaceView? {
         get { _frontView }
     }
 
-    var backView: (any UIView & ConfigurableView)? {
-        get { _backView } 
+    var backView: CardFaceView? {
+        get { _backView }
     }
+    
+    private var frontViewType: CardFaceType?
+    private var backViewType: CardFaceType?
     // MARK: - UI Elements
     private let container: UIView = UIView()
     private let smartShuffleIcon: UIImageView = UIImageView(image: UIImage(systemName: "sparkles"))
-    private var _frontView: (any UIView & ConfigurableView)?
-    private var _backView: (any UIView & ConfigurableView)?
+    private var _frontView: CardFaceView?
+    private var _backView: CardFaceView?
     
     // MARK: - Initializers
     init() {
@@ -44,10 +97,11 @@ class CardView: UIView {
         container.pinWidth(to: self)
         container.pinHeight(to: self)
         
+        smartShuffleIcon.isHidden = true
         container.addSubview(smartShuffleIcon)
-        smartShuffleIcon.setWidth(50)
-        smartShuffleIcon.setHeight(50)
-        smartShuffleIcon.pinLeft(to: container, 20)
+        smartShuffleIcon.setWidth(30)
+        smartShuffleIcon.setHeight(35)
+        smartShuffleIcon.pinLeft(to: container.leadingAnchor, 20)
         smartShuffleIcon.pinBottom(to: container.bottomAnchor, 20)
     }
     
@@ -57,11 +111,16 @@ class CardView: UIView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: WordModel) {
-        _frontView?.configure(with: model)
-        _backView?.configure(with: model)
+    func configure(with viewModel: CardViewModel) {
+        if viewModel.isFlipped {
+            flip(animated: false)
+            isFlipped = true
+        }
+        
+        _frontView?.configure(with: viewModel.createFrontViewModel())
+        _backView?.configure(with: viewModel.createBackViewModel())
 
-        if model.isSmartShuffle {
+        if viewModel.isSmartShuffle {
             container.layer.borderColor = UIColor.systemBlue.cgColor
             container.layer.borderWidth = 1
             smartShuffleIcon.isHidden = false
@@ -71,7 +130,7 @@ class CardView: UIView {
             smartShuffleIcon.isHidden = true
         }
 
-        self.model = model
+        self.viewModel = viewModel
     }
     
     func prepareForReuse() {
@@ -84,10 +143,10 @@ class CardView: UIView {
     }
     
     // MARK: - Setting Views
-    func setFrontView(to view: any UIView & ConfigurableView) {
+    func setFrontView(to view: CardFaceView) {
         _frontView?.removeFromSuperview()
         view.layer.cornerRadius = Constants.cornerRadius
-        container.addSubview(view)
+        container.insertSubview(view, at: 0)
         view.pinVertical(to: container)
         view.pinHorizontal(to: container)
         if isFlipped {
@@ -98,10 +157,10 @@ class CardView: UIView {
         _frontView = view
     }
     
-    func setBackView(to view: any UIView & ConfigurableView) {
+    func setBackView(to view: CardFaceView) {
         _backView?.removeFromSuperview()
         view.layer.cornerRadius = Constants.cornerRadius
-        container.addSubview(view)
+        container.insertSubview(view, at: 0)
         view.pinVertical(to: container)
         view.pinHorizontal(to: container)
         if !isFlipped {

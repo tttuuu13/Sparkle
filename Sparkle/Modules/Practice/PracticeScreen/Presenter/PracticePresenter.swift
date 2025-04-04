@@ -13,6 +13,7 @@ protocol PracticePresentationLogic {
     func presentTopCardSwipe(response: PracticeModel.HandleTopCardSwipe.Response)
     func presentDeleteWord(response: PracticeModel.DeleteTopWord.Response)
     func presentError(_ error: Error)
+    func presentFinishScreen(response: PracticeModel.FinishPractice.Response)
 }
 
 final class PracticePresenter: PracticePresentationLogic {
@@ -65,5 +66,10 @@ final class PracticePresenter: PracticePresentationLogic {
 
     func presentError(_ error: any Error) {
         
+    }
+
+    func presentFinishScreen(response: PracticeModel.FinishPractice.Response) {
+        let viewModel = PracticeModel.FinishPractice.ViewModel(progress: Double(response.wordsPracticed) / Double(response.wordsTotal), wordsPracticed: response.wordsPracticed, wordsTotal: response.wordsTotal)
+        viewController?.displayFinishScreen(viewModel: viewModel)
     }
 }

@@ -8,6 +8,11 @@
 import UIKit
 import AVFoundation
 
+struct TranslationViewModel: CardFaceViewModel {
+    let word: String
+    let transcription: String
+    let translation: String
+}
 
 struct Counter {
     var current: Int
@@ -15,14 +20,9 @@ struct Counter {
 }
 
 // MARK: - Translation View
-final class TranslationView: UIView, ConfigurableView {
+final class TranslationView: CardFaceView {
     // MARK: - Constants
     private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
-        }
-        
         enum TextLabel {
             static let font: UIFont = .systemFont(ofSize: 30, weight: .medium)
             static let offset: CGFloat = 10
@@ -45,8 +45,9 @@ final class TranslationView: UIView, ConfigurableView {
     }
 
     // MARK: - Properties
-    private var model: WordModel?
-    
+    private var viewModel: TranslationViewModel?
+    private let ttsWorker: TextToSpeechWorkerProtocol = ElevenLabsWorker()
+
     // MARK: - UI Elements
     private let textLabel: UILabel = UILabel()
     private let transcriptionLabel: UILabel = UILabel()
@@ -54,8 +55,8 @@ final class TranslationView: UIView, ConfigurableView {
     private let cardCounter: UILabel = UILabel()
     
     // MARK: - Initializers
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configureUI()
     }
     
@@ -65,18 +66,17 @@ final class TranslationView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: WordModel) {
-        textLabel.text = model.translation
-        transcriptionLabel.text = model.transcription
+    override func configure(with viewModel: CardFaceViewModel) {
+        guard let viewModel = viewModel as? TranslationViewModel else { return }
 
-        self.model = model
+        textLabel.text = viewModel.translation
+        transcriptionLabel.text = viewModel.transcription
+
+        self.viewModel = viewModel
     }
     
     // MARK: - UI Configuration
     private func configureUI() {
-        layoutMargins = Constants.View.insets
-        backgroundColor = Constants.View.backgroundColor
-        
         configureTextLabel()
         configureTranscriptionLabel()
         configureSoundButton()
@@ -99,7 +99,7 @@ final class TranslationView: UIView, ConfigurableView {
     }
     
     private func configureSoundButton() {
-        playButton.setImage(UIImage(systemName: "speaker.slash.circle.fill"), for: .normal)
+        playButton.setImage(UIImage(systemName: "speaker.wave.2.circle.fill"), for: .normal)
         playButton.contentVerticalAlignment = .fill
         playButton.contentHorizontalAlignment = .fill
         playButton.addTarget(self, action: #selector(playSound), for: .touchUpInside)
@@ -120,5 +120,14 @@ final class TranslationView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func playSound() {
+        guard let viewModel = viewModel else { return }
+        ttsWorker.playSpeech(for: viewModel.word) { [weak self] result in
+            switch result {
+            case .success():
+                break
+            case .failure(_):
+                self?.playButton.setImage(UIImage(systemName: "speaker.slash.circle.fill"), for: .normal)
+            }
+        }
     }
 }

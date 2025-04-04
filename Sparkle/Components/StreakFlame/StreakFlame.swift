@@ -1,10 +1,3 @@
-//
-//  FireCounter.swift
-//  Sparkle
-//
-//  Created by тимур on 29.12.2024.
-//
-
 import UIKit
 
 final class StreakFlame: UIView {
@@ -12,30 +5,19 @@ final class StreakFlame: UIView {
     private enum Constants {
         enum Flame {
             static let fillColor: UIColor = UIColor(red: 1, green: 149 / 255, blue: 0, alpha: 1)
-        }
-        
-        enum Counter {
-            static let font: UIFont = .rounded(ofSize: 32, weight: .black)
-            static let color: UIColor = UIColor(red: 1, green: 204 / 255, blue: 0, alpha: 1)
-            static let shadowOffset: CGSize = .zero
-            static let shadowOpacity: Float = 1
+            static let baseWidth: CGFloat = 61
+            static let baseHeight: CGFloat = 76
         }
     }
 
     // MARK: - Properties
+    static let aspectRatio = CGFloat(61) / CGFloat(76)
     private let shapeLayer: CAShapeLayer = CAShapeLayer()
-    private let counterLabel: UILabel = UILabel()
-    public var counter: Int = 0 {
-        didSet {
-            counterLabel.text = String(counter)
-        }
-    }
     
     // MARK: - Initializers
     override init(frame: CGRect) {
         super.init(frame: frame)
         configureFlame()
-        configureCounter()
     }
     
     @available(*, unavailable)
@@ -45,27 +27,22 @@ final class StreakFlame: UIView {
     
     // MARK: - Flame Configuration
     private func configureFlame() {
-        shapeLayer.path = createFlamePath().cgPath
         shapeLayer.fillColor = Constants.Flame.fillColor.cgColor
         layer.addSublayer(shapeLayer)
-        
-        setWidth(61)
-        setHeight(76)
     }
     
-    // MARK: - Counter Configuration
-    private func configureCounter() {
-        addSubview(counterLabel)
-        counterLabel.text = String(counter)
-        counterLabel.font = Constants.Counter.font
-        counterLabel.textColor = Constants.Counter.color
-        counterLabel.layer.shadowColor = Constants.Counter.color.cgColor
-        counterLabel.layer.shadowOffset = Constants.Counter.shadowOffset
-        counterLabel.layer.shadowOpacity = Constants.Counter.shadowOpacity
+    // MARK: - Layout
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        shapeLayer.frame = bounds
         
+        let scaleX = bounds.width / Constants.Flame.baseWidth
+        let scaleY = bounds.height / Constants.Flame.baseHeight
+        let scale = min(scaleX, scaleY)
         
-        counterLabel.pinCenterX(to: self)
-        counterLabel.pinCenterY(to: self, 10)
+        var transform = CGAffineTransform(scaleX: scale, y: scale)
+        let path = createFlamePath().cgPath.copy(using: &transform)
+        shapeLayer.path = path
     }
     
     // MARK: - Creating Flame Path
@@ -90,5 +67,9 @@ final class StreakFlame: UIView {
 @available(iOS 17.0, *)
 #Preview {
     let flame = StreakFlame()
+    flame.setWidth(100)
+    flame.setHeight(100 / StreakFlame.aspectRatio)
+    flame.layer.borderWidth = 1
+    flame.layer.borderColor = UIColor.systemGray.cgColor
     return flame
 }

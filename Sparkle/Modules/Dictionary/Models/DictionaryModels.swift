@@ -8,22 +8,45 @@
 import UIKit
 
 enum DictionaryModels {
-    enum FetchWords {
+    enum LoadWords {
         struct Request {}
 
         struct Response {
-            let words: [WordModel]
         }
 
         struct ViewModel {
-            let words: [WordModel]
         }
     }
 
     enum DeleteWord {
         struct Request {
-            let word: WordModel
+            let indexPath: IndexPath
         }
+        
+        struct Response {
+            let indexPath: IndexPath
+        }
+        
+        struct ViewModel {
+            let indexPath: IndexPath
+        }
+    }
+    
+    enum SortWords {
+        enum SortType {
+            case newer
+            case older
+            case alphabet
+            case goodLevel
+            case badLevel
+        }
+        
+        struct Request {
+            let sortType: SortType
+        }
+        
+        struct Response {}
+        struct ViewModel{}
     }
 }
 

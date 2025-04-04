@@ -7,14 +7,13 @@
 
 import UIKit
 
-final class WordView: UIView, ConfigurableView {
+struct WordViewModel: CardFaceViewModel {
+    let word: String
+}
+
+final class WordView: CardFaceView {
     // MARK: - Constants
     private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
-        }
-        
         enum TextField {
             static let font: UIFont = UIFont.systemFont(ofSize: 30, weight: .medium)
             static let placeholder: String = "слово"
@@ -28,14 +27,14 @@ final class WordView: UIView, ConfigurableView {
     }
     
     // MARK: - Properties
-    private var model: WordModel?
+    private var viewModel: WordViewModel?
     
     // MARK: - UI Elements
     let textLabel: UILabel = UILabel()
     
     // MARK: - Initializers
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configureUI()
     }
     
@@ -45,17 +44,16 @@ final class WordView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: WordModel) {
-        textLabel.text = model.word
+    override func configure(with viewModel: CardFaceViewModel) {
+        guard let viewModel = viewModel as? WordViewModel else { return }
+
+        textLabel.text = viewModel.word
         
-        self.model = model
+        self.viewModel = viewModel
     }
     
     // MARK: - UI Configuration
     private func configureUI() {
-        layoutMargins = Constants.View.insets
-        backgroundColor = Constants.View.backgroundColor
-        
         configureTextLabel()
     }
     

@@ -8,13 +8,18 @@
 import Foundation
 import UIKit
 
+enum SwipeDirection {
+    case left
+    case right
+}
+
 protocol CardStackViewDelegate: AnyObject {
-    func cardStack(_ cardStack: CardStackView, didSwipeCardIndex index: Int, in direction: CardStackView.SwipeDirection)
+    func cardStack(_ cardStack: CardStackView, didSwipeCardIndex index: Int, in direction: SwipeDirection)
 }
 
 protocol CardStackViewDataSource: AnyObject {
     func numberOfCards(in cardStack: CardStackView) -> Int
-    func cardStack(_ cardStack: CardStackView, wordModelAt index: Int) -> WordModel
+    func cardStack(_ cardStack: CardStackView, cardViewModelAt index: Int) -> CardViewModel
 }
 
 final class CardStackView: UIView {
@@ -26,7 +31,7 @@ final class CardStackView: UIView {
         
         enum Card {
             static let shadowOpacity: Float = 0.1
-            static let shadowRadius: CGFloat = 45
+            static let shadowRadius: CGFloat = 40
         }
 
         enum Counter {
@@ -41,27 +46,24 @@ final class CardStackView: UIView {
         case cycle
         case remove
     }
-
-    enum SwipeDirection {
-        case left
-        case right
-    }
     
     // MARK: - Properties
     weak var delegate: CardStackViewDelegate?
     weak var dataSource: CardStackViewDataSource?
     private(set) var currentCardIndex = 0
-    private var mode: DisplayMode
     private var swipeMode: SwipeMode
-    private var showingViews: [CardView] = []
+    private var showingViews: [Card] = []
     private var topCardPosition: CGPoint = .zero
+    private var areCardsFlipped: Bool
+    private var areCardsFlippable: Bool
     private var panGestureRecognizer: UIPanGestureRecognizer = UIPanGestureRecognizer()
     private var tapGestureRecognizer: UITapGestureRecognizer = UITapGestureRecognizer()
     
     // MARK: - Initializers
-    init(mode: DisplayMode = .translation, swipeMode: SwipeMode = .cycle) {
-        self.mode = mode
+    init(swipeMode: SwipeMode, areCardsFlipped: Bool = false, areCardsFlippable: Bool = true) {
         self.swipeMode = swipeMode
+        self.areCardsFlipped = areCardsFlipped
+        self.areCardsFlippable = areCardsFlippable
         super.init(frame: .zero)
         panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTapGesture(_:)))
@@ -77,21 +79,22 @@ final class CardStackView: UIView {
         var perspective = CATransform3DIdentity
         perspective.m34 = -1.0 / 3000
         layer.sublayerTransform = perspective
-
-        reloadData()
-        updateCardLayout()
     }
     
     // MARK: - Public Methods
-    func reloadData() {
+    func configure(frontViewType: CardFaceType, backViewType: CardFaceType, swipeMode: SwipeMode, areCardsFlipped: Bool = false, areCardsFlippable: Bool = true) {
+    }
+    
+    func reloadData(completion: @escaping (() -> Void) = {}) {
         guard let dataSource = dataSource else { return }
         
         for index in 0..<Constants.StackView.cardsToShow {
             if index + 1 > showingViews.count && index + 1 <= dataSource.numberOfCards(in: self) {
-                let card = CardView()
-                card.setFrontView(to: WordView())
-                card.setBackView(to: mode == .translation ? TranslationView() : DefinitionView())
-                card.configure(with: dataSource.cardStack(self, wordModelAt: index))
+                let card = Card()
+                let cardViewModel = dataSource.cardStack(self, cardViewModelAt: index)
+                card.setFrontView(to: cardViewModel.createFrontView())
+                card.setBackView(to: cardViewModel.createBackView())
+                card.configure(with: cardViewModel)
                 card.layer.shadowOpacity = Constants.Card.shadowOpacity / Float(Constants.StackView.cardsToShow)
                 card.layer.shadowRadius = Constants.Card.shadowRadius
                 insertSubview(card, at: 0)
@@ -114,32 +117,38 @@ final class CardStackView: UIView {
         updateCardLayout()
     }
     
-    func updateCardLayout(completion: @escaping (() -> Void) = {}) {
+    func updateCardLayout() {
         guard let dataSource = dataSource else { return }
 
-        UIView.animate(withDuration: 0.3) { [self] in
-            for index in 0..<showingViews.count {
-                let card = showingViews[index]
-                card.configure(with: dataSource.cardStack(self, wordModelAt: index))
+        for index in 0..<showingViews.count {
+            let card = showingViews[index]
+            let viewModel = dataSource.cardStack(self, cardViewModelAt: index)
+            card.setFrontView(to: viewModel.createFrontView())
+            card.configure(with: viewModel)
+            UIView.animate(withDuration: 0.3) {
                 card.layer.transform = CATransform3DTranslate(CATransform3DIdentity, 0, CGFloat(25 * index), CGFloat(-300 * index))
                 card.layer.shadowOpacity = Float(Constants.Card.shadowOpacity)
             }
         }
     }
     
-    func getTopWordModel() -> WordModel? {
+    func getTopCardViewModel() -> CardViewModel? {
         guard let dataSource = dataSource else { return nil }
-        return dataSource.cardStack(self, wordModelAt: 0)
+        return dataSource.cardStack(self, cardViewModelAt: 0)
     }
     
     // MARK: - Gesture Handling
     @objc private func handleTapGesture(_ gesture: UITapGestureRecognizer) {
-        guard let card = gesture.view as? CardView else { return }
+        if !areCardsFlippable {
+            return
+        }
+        
+        guard let card = gesture.view as? Card else { return }
         card.flip()
     }
     
     @objc private func handlePanGesture(_ gesture: UIPanGestureRecognizer) {
-        guard let card = gesture.view as? CardView else { return }
+        guard let card = gesture.view as? Card else { return }
         let translation = gesture.translation(in: self)
         let offsetX = card.center.x - topCardPosition.x
         
@@ -159,19 +168,19 @@ final class CardStackView: UIView {
         }
     }
     
-    private func startDrugging(_ card: CardView) {
+    private func startDrugging(_ card: Card) {
         topCardPosition = card.center
         UIView.animate(withDuration: 0.2) {
             card.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
         }
     }
     
-    private func moveCard(_ card: CardView, translation: CGPoint, offsetX: CGFloat) {
+    private func moveCard(_ card: Card, translation: CGPoint, offsetX: CGFloat) {
         card.center = CGPoint(x: card.center.x + translation.x * 2, y: card.center.y + translation.y * 0.3)
         card.transform = CGAffineTransform(rotationAngle: offsetX / 500).scaledBy(x: 1.05, y: 1.05)
     }
     
-    private func endDrugging(_ card: CardView, offsetX: CGFloat) {
+    private func endDrugging(_ card: Card, offsetX: CGFloat) {
         if abs(offsetX) > 200 {
             if swipeMode == .cycle && showingViews.count > 1 {
                 swipeTopCardToBack(card, direction: offsetX > 0 ? .right : .left)
@@ -183,7 +192,7 @@ final class CardStackView: UIView {
         }
     }
     
-    private func swipeTopCardToBack(_ card: CardView, direction: SwipeDirection) {
+    private func swipeTopCardToBack(_ card: Card, direction: SwipeDirection) {
         delegate?.cardStack(self, didSwipeCardIndex: currentCardIndex, in: direction)
         card.removeGestureRecognizer(panGestureRecognizer)
         card.removeGestureRecognizer(tapGestureRecognizer)
@@ -205,7 +214,7 @@ final class CardStackView: UIView {
         }
     }
 
-    private func removeCard(_ card: CardView, direction: SwipeDirection) {
+    private func removeCard(_ card: Card, direction: SwipeDirection) {
         guard let dataSource = dataSource else { return }
         card.removeGestureRecognizer(panGestureRecognizer)
         card.removeGestureRecognizer(tapGestureRecognizer)
@@ -236,7 +245,7 @@ final class CardStackView: UIView {
         }
     }
     
-    private func returnCardToOriginalPosition(_ card: CardView) {
+    private func returnCardToOriginalPosition(_ card: Card) {
         UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 0.7, initialSpringVelocity: 0.3, options: [.curveEaseInOut], animations: {
             card.transform = .identity
             card.center = self.topCardPosition
@@ -244,28 +253,6 @@ final class CardStackView: UIView {
     }
     
     // MARK: - Animations
-    func expand(completion: @escaping (() -> Void) = {}) {
-        let group = DispatchGroup()
-        
-        
-        for (index, card) in showingViews.enumerated() {
-            group.enter()
-            
-            card.layer.shadowOpacity = Constants.Card.shadowOpacity / Float(showingViews.count)
-            card.layer.shadowRadius = Constants.Card.shadowRadius
-            UIView.animate(withDuration: 0.5) {
-                card.layer.shadowOpacity = Constants.Card.shadowOpacity
-                card.layer.transform = CATransform3DTranslate(CATransform3DIdentity, 0, CGFloat(25 * index), CGFloat(-300 * index))
-            } completion: { _ in
-                group.leave()
-            }
-        }
-        
-        group.notify(queue: .main) {
-            completion()
-        }
-    }
-    
     func collapse(completion: @escaping (() -> Void) = {}) {
         if showingViews.isEmpty {
             completion()

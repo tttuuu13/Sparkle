@@ -8,16 +8,20 @@
 import Foundation
 
 protocol DictionaryPresentationLogic {
-    func presentWords(_ response: DictionaryModels.FetchWords.Response)
+    func presentWords(_ response: DictionaryModels.LoadWords.Response)
+    func presentDeleteWord(_ response: DictionaryModels.DeleteWord.Response)
     func presentError(_ error: Error)
 }
 
 final class DictionaryPresenter: DictionaryPresentationLogic {
     weak var viewController: DictionaryDisplayLogic?
 
-    func presentWords(_ response: DictionaryModels.FetchWords.Response) {
-        let viewModel = DictionaryModels.FetchWords.ViewModel(words: response.words)
-        viewController?.displayWords(viewModel)
+    func presentWords(_ response: DictionaryModels.LoadWords.Response) {
+        viewController?.displayWords(DictionaryModels.LoadWords.ViewModel())
+    }
+    
+    func presentDeleteWord(_ response: DictionaryModels.DeleteWord.Response) {
+        viewController?.displayDeleteWord(DictionaryModels.DeleteWord.ViewModel(indexPath: response.indexPath))
     }
 
     func presentError(_ error: any Error) {

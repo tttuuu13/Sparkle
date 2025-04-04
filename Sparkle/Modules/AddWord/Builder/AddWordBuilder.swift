@@ -12,11 +12,12 @@ final class AddWordBuilder {
         let interactor = AddWordInteractor()
         let presenter = AddWordPresenter()
         let mistralWorker = MistralWorker()
+        let mockLLMWorker = LLMMockWorker()
 
         viewController.interactor = interactor
         presenter.viewController = viewController
         interactor.presenter = presenter
-        interactor.mistralWorker = mistralWorker
+        interactor.llmWorker = mistralWorker
         
         return viewController
     }

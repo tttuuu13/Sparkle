@@ -7,12 +7,13 @@
 
 import Foundation
 
-protocol MistralWorkerProtocol {
-    func getWordModels(for word: String, mode: DisplayMode, completion: @escaping (Result<[WordModel], Error>) -> Void)
-    func getExampleSentence(for wordModel: WordModel, completion: @escaping (Result<String, Error>) -> Void)
+protocol LLMWorkerProtocol {
+    func getWordModels(for word: String, mode: CardFaceType, completion: @escaping (Result<[WordModel], Error>) -> Void)
+    func getExampleSentence(for word: String, meaning: String, completion: @escaping (Result<String, Error>) -> Void)
+    func getSmartShuffleWords(for words: [WordModel], amount: Int, completion: @escaping (Result<[WordModel], Error>) -> Void)
 }
 
-final class MistralWorker: MistralWorkerProtocol {
+final class MistralWorker: LLMWorkerProtocol {
     static let shared: MistralWorker = MistralWorker()
     
     // MARK: - Constants
@@ -65,7 +66,7 @@ final class MistralWorker: MistralWorkerProtocol {
     }
 
     // MARK: - Public Methods
-    func getWordModels(for word: String, mode:  DisplayMode, completion: @escaping (Result<[WordModel], Error>) -> Void) {
+    func getWordModels(for word: String, mode:  CardFaceType, completion: @escaping (Result<[WordModel], Error>) -> Void) {
         getCompletion(for: "Given the word '\(word)'. Return a list of one or more (if word has multiple \(mode == .translation ? "translations" : "definitions")) word models in JSON with following format: [{word: word, translation: translation to Russian, transcription: /transcription of original word/, partOfSpeech: partOfSpeech, definition: definition in english}]") { result in
             switch result {
             case .success(let response):
@@ -81,11 +82,12 @@ final class MistralWorker: MistralWorkerProtocol {
         }
     }
     
-    func getExampleSentence(for wordModel: WordModel, completion: @escaping (Result<String, Error>) -> Void) {
-        getCompletion(for: "Write a simple sentence using word '\(wordModel.word)' in the meaning of '\(wordModel.definition)'. Make sure to return JUST THE SENTENC in EXACT format: 'generated sentence'") { result in
+    func getExampleSentence(for word: String, meaning: String, completion: @escaping (Result<String, Error>) -> Void) {
+        getCompletion(for: "Write a simple sentence using word '\(word)' in the meaning of '\(meaning)'. Make sure to return JUST ONE SENTENCE in following format: ['sentence']") { result in
             switch result {
             case .success(let response):
-                completion(.success(response))
+                let sentence = try? JSONDecoder().decode([String].self, from: response.data(using: .utf8)!).first ?? "Sentence cannot be generated("
+                completion(.success(sentence ?? "Sentence cannot be generated("))
             case .failure(let error):
                 completion(.failure(error))
             }
@@ -98,8 +100,7 @@ final class MistralWorker: MistralWorkerProtocol {
             switch result {
             case .success(let response):
                 do {
-                    var wordModels = try JSONDecoder().decode([WordModel].self, from: response.data(using: .utf8)!)
-                    wordModels = wordModels.map { var word = $0; word.isSmartShuffle = true; return word }
+                    let wordModels = try JSONDecoder().decode([WordModel].self, from: response.data(using: .utf8)!)
                     completion(.success(wordModels))
                 } catch {
                     completion(.failure(MistralError.NoSmartShuffleWordsFound))
@@ -115,4 +116,78 @@ enum MistralError: Error {
     case NoTranslationsFound
     case NoDefinitionsFound
     case NoSmartShuffleWordsFound
+}
+
+final class LLMMockWorker: LLMWorkerProtocol {
+    func getWordModels(for word: String, mode: CardFaceType, completion: @escaping (Result<[WordModel], any Error>) -> Void) {
+        let words: [WordModel] = [
+            WordModel(
+                id: UUID(),
+                word: "serendipity",
+                partOfSpeech: "noun",
+                transcription: "/ˌserənˈdɪpɪti/",
+                translation: "случайная удача",
+                definition: "the occurrence and development of events by chance in a happy or beneficial way"
+            ),
+            WordModel(
+                id: UUID(),
+                word: "ephemeral",
+                partOfSpeech: "adjective",
+                transcription: "/ɪˈfem(ə)rəl/",
+                translation: "недолговечный",
+                definition: "lasting for a very short time"
+            ),
+            WordModel(
+                id: UUID(),
+                word: "ubiquitous",
+                partOfSpeech: "adjective",
+                transcription: "/juːˈbɪkwɪtəs/",
+                translation: "вездесущий",
+                definition: "present, appearing, or found everywhere"
+            ),
+            WordModel(
+                id: UUID(),
+                word: "mellifluous",
+                partOfSpeech: "adjective",
+                transcription: "/məˈlɪfluəs/",
+                translation: "медоточивый",
+                definition: "sweet or musical; pleasant to hear"
+            ),
+            WordModel(
+                id: UUID(),
+                word: "paradigm",
+                partOfSpeech: "noun",
+                transcription: "/ˈparədʌɪm/",
+                translation: "парадигма",
+                definition: "a typical example or pattern of something"
+            )
+        ]
+        completion(.success(words))
+    }
+    
+    func getExampleSentence(for word: String, meaning: String, completion: @escaping (Result<String, any Error>) -> Void) {
+        completion(.success("This is an example sentence."))
+    }
+    
+    func getSmartShuffleWords(for words: [WordModel], amount: Int, completion: @escaping (Result<[WordModel], any Error>) -> Void) {
+        let words = [
+            WordModel(
+                id: UUID(),
+                word: "car",
+                partOfSpeech: "adjective",
+                transcription: "/məˈlɪfluəs/",
+                translation: "медоточивый",
+                definition: "sweet or musical; pleasant to hear"
+            ),
+            WordModel(
+                id: UUID(),
+                word: "road",
+                partOfSpeech: "noun",
+                transcription: "/ˈparədʌɪm/",
+                translation: "парадигма",
+                definition: "a typical example or pattern of something"
+            )
+        ]
+        completion(.success(words))
+    }
 }

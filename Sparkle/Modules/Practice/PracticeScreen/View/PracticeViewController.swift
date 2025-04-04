@@ -12,17 +12,14 @@ protocol PracticeDisplayLogic: AnyObject {
     func displayTopCardSwipe(viewModel: PracticeModel.HandleTopCardSwipe.ViewModel)
     func displaySmartShuffle(viewModel: PracticeModel.LoadSmartShuffle.ViewModel)
     func displayDeleteWord(viewModel: PracticeModel.DeleteTopWord.ViewModel)
+    func displayFinishScreen(viewModel: PracticeModel.FinishPractice.ViewModel)
 }
 
 class PracticeViewController: UIViewController {
     // MARK: - Constants
     private enum Constants {
-        enum View {
-            static let backgroundColor: UIColor = UIColor(red: 238 / 255, green: 238 / 255, blue: 238 / 255, alpha: 1)
-        }
-        
         enum CardStack {
-            static let size: CGSize = CGSize(width: 320, height: 350)
+            static let size: CGSize = CGSize(width: 300, height: 300)
         }
         
         enum BottomView {
@@ -65,21 +62,35 @@ class PracticeViewController: UIViewController {
         }
         
         enum StreakFlame {
-            static let offset: CGPoint = CGPoint(x: 20, y: 20)
+            static let offset: CGPoint = CGPoint(x: 30, y: 0)
+        }
+        
+        enum CounterLabel {
+            static let font: UIFont = .rounded(ofSize: 32, weight: .black)
+            static let color: UIColor = UIColor(red: 1, green: 204 / 255, blue: 0, alpha: 1)
+            static let shadowOffset: CGSize = .zero
+            static let shadowOpacity: Float = 1
         }
     }
     
     // MARK: - Properties
     var interactor: (PracticeBusinessLogic & CardStackViewDataSource)?
+    var router: PracticeRouter?
+    private var streakCounter: Int = 0 {
+        didSet {
+            counterLabel.text = "\(streakCounter)"
+        }
+    }
     
     // MARK: - UI Elements
-    private var cardStack: CardStackView = CardStackView(mode: .definition, swipeMode: .remove)
+    private var cardStack: CardStackView = CardStackView(swipeMode: .remove)
     private let bottomView: UIView = UIView()
     private let finishButton: UIButton = UIButton(type: .system)
     private let deleteButton: UIButton = UIButton(type: .system)
     private let progressBar: UIProgressView = UIProgressView()
     private let smartShuffleButton: UIButton = UIButton(type: .system)
     private let streakFlame: StreakFlame = StreakFlame()
+    private let counterLabel: UILabel = UILabel()
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -87,13 +98,21 @@ class PracticeViewController: UIViewController {
         configureUI()
         interactor?.loadCards(request: PracticeModel.LoadCards.Request())
     }
-    
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
     // MARK: - UI Configuration
     private func configureUI() {
-        view.backgroundColor = Constants.View.backgroundColor
-        
+        view.backgroundColor = UIColor(white: 0.95, alpha: 1)
+        navigationItem.largeTitleDisplayMode = .never
+        navigationController?.navigationBar.prefersLargeTitles = false
+
         configureCardStack()
         configureStreakFlame()
+        configureCounterLabel()
         configureBottomView()
     }
     
@@ -107,10 +126,25 @@ class PracticeViewController: UIViewController {
         cardStack.setHeight(Constants.CardStack.size.height)
     }
     
-    func configureStreakFlame() {
+    private func configureStreakFlame() {
         view.insertSubview(streakFlame, at: 0)
+        streakFlame.setWidth(60)
+        streakFlame.setHeight(60 / StreakFlame.aspectRatio)
         streakFlame.pinRight(to: view.trailingAnchor, Constants.StreakFlame.offset.x)
         streakFlame.pinTop(to: view.safeAreaLayoutGuide.topAnchor, Constants.StreakFlame.offset.y)
+    }
+    
+    private func configureCounterLabel() {
+        streakCounter = 0
+        counterLabel.font = Constants.CounterLabel.font
+        counterLabel.textColor = Constants.CounterLabel.color
+        counterLabel.layer.shadowOffset = Constants.CounterLabel.shadowOffset
+        counterLabel.layer.shadowOpacity = Constants.CounterLabel.shadowOpacity
+        counterLabel.layer.shadowColor = Constants.CounterLabel.color.cgColor
+
+        view.insertSubview(counterLabel, at: 1)
+        counterLabel.pinCenterX(to: streakFlame)
+        counterLabel.pinCenterY(to: streakFlame, 7)
     }
     
     private func configureBottomView() {
@@ -188,7 +222,7 @@ class PracticeViewController: UIViewController {
 
     // MARK: - Button Targets
     @objc private func finishButtonTapped() {
-        print("finishButtonTapped")
+        interactor?.finishPractice(request: PracticeModel.FinishPractice.Request())
     }
 
     @objc private func deleteButtonTapped() {
@@ -224,11 +258,15 @@ extension PracticeViewController: PracticeDisplayLogic {
         progressBar.setProgress(viewModel.progress, animated: true)
         cardStack.reloadData()
     }
+
+    func displayFinishScreen(viewModel: PracticeModel.FinishPractice.ViewModel) {
+        router?.presentFinishScreenModal(wordsPracticed: viewModel.wordsPracticed, wordsTotal: viewModel.wordsTotal)
+    }
 }
 
 extension PracticeViewController: CardStackViewDelegate {
-    func cardStack(_ cardStack: CardStackView, didSwipeCardIndex index: Int, in direction: CardStackView.SwipeDirection) {
-        streakFlame.counter = direction == .right ? streakFlame.counter + 1 : 0
+    func cardStack(_ cardStack: CardStackView, didSwipeCardIndex index: Int, in direction: SwipeDirection) {
+        streakCounter = direction == .right ? streakCounter + 1 : 0
         
         interactor?.handleTopCardSwipe(request: PracticeModel.HandleTopCardSwipe.Request(direction: direction))
     }

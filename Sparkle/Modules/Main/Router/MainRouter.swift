@@ -35,7 +35,8 @@ final class MainRouter: MainRoutingLogic {
     }
 
     func routeToProgress() {
-        
+        let progressVC = StatisticsBuilder.build()
+        viewController?.navigationController?.pushViewController(progressVC, animated: true)
     }
 
     func routeToSettings() {

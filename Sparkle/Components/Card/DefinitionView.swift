@@ -8,14 +8,16 @@
 import AVFoundation
 import UIKit
 
-final class DefinitionView: UIView, ConfigurableView {
+struct DefinitionViewModel: CardFaceViewModel {
+    let word: String
+    let wordClass: String
+    let definition: String
+    let example: String? = nil
+}
+
+final class DefinitionView: CardFaceView {
     // MARK: - Constants
     private enum Constants {
-        enum View {
-            static let insets: UIEdgeInsets = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-            static let backgroundColor: UIColor = UIColor(red: 245 / 255, green: 245 / 255, blue: 245 / 255, alpha: 1)
-        }
-        
         enum WordClassLabel {
             static let font: UIFont = .systemFont(ofSize: 14, weight: .regular)
             static let textColor: UIColor = .white
@@ -55,7 +57,8 @@ final class DefinitionView: UIView, ConfigurableView {
     }
     
     // MARK: - Properties
-    private var model: WordModel?
+    private var viewModel: DefinitionViewModel?
+    private let ttsWorker: TextToSpeechWorkerProtocol = ElevenLabsWorker()
     private var exampleExpanded: Bool = false
     
     // MARK: - UI Elements
@@ -72,8 +75,8 @@ final class DefinitionView: UIView, ConfigurableView {
     var exampleViewWidthConstraint: NSLayoutConstraint?
     
     // MARK: - Initializers
-    init() {
-        super.init(frame: .zero)
+    override init() {
+        super.init()
         configureUI()
     }
     
@@ -83,22 +86,24 @@ final class DefinitionView: UIView, ConfigurableView {
     }
     
     // MARK: - Configuration Method
-    func configure(with model: WordModel) {
-        wordClassLabel.text = model.partOfSpeech
+    override func configure(with viewModel: CardFaceViewModel) {
+        guard let viewModel = viewModel as? DefinitionViewModel else { return }
+
+        wordClassLabel.text = viewModel.wordClass
         
         let firstPart = NSMutableAttributedString(string: "def: ", attributes: [
             .font: UIFont.italicSystemFont(ofSize: 18),
             .foregroundColor: UIColor.systemGray
         ])
         
-        let secondPart = NSAttributedString(string: model.definition, attributes: [
+        let secondPart = NSAttributedString(string: viewModel.definition, attributes: [
             .font: Constants.DefinitionLabel.font
         ])
         
         firstPart.append(secondPart)
         definitionLabel.attributedText = firstPart
         
-        self.model = model
+        self.viewModel = viewModel
         
         if exampleExpanded {
             hideExample()
@@ -107,9 +112,6 @@ final class DefinitionView: UIView, ConfigurableView {
     
     // MARK: - UI Configuration
     private func configureUI() {
-        layoutMargins = Constants.View.insets
-        backgroundColor = Constants.View.backgroundColor
-        
         configureWordClassLabel()
         configureDefinitionLabel()
         configureSoundButton()
@@ -186,7 +188,7 @@ final class DefinitionView: UIView, ConfigurableView {
     }
     
     private func configureSoundButton() {
-        playButton.setImage(UIImage(systemName: "speaker.slash.circle.fill"), for: .normal)
+        playButton.setImage(UIImage(systemName: "speaker.wave.2.circle.fill"), for: .normal)
         playButton.contentVerticalAlignment = .fill
         playButton.contentHorizontalAlignment = .fill
         playButton.addTarget(self, action: #selector(playSound), for: .touchUpInside)
@@ -207,7 +209,15 @@ final class DefinitionView: UIView, ConfigurableView {
     
     // MARK: - Button Targets
     @objc private func playSound() {
-
+        guard let viewModel = viewModel else { return }
+        ttsWorker.playSpeech(for: viewModel.word) { [weak self] result in
+            switch result {
+            case .success():
+                break
+            case .failure(_):
+                self?.playButton.setImage(UIImage(systemName: "speaker.slash.circle.fill"), for: .normal)
+            }
+        }
     }
     
     @objc private func exampleViewTapped() {
@@ -216,8 +226,8 @@ final class DefinitionView: UIView, ConfigurableView {
             return
         }
         
-        guard let model = model else { return }
-        MistralWorker.shared.getExampleSentence(for: model) { result in
+        guard let viewModel = viewModel else { return }
+        MistralWorker.shared.getExampleSentence(for: viewModel.word, meaning: viewModel.definition) { result in
             switch result {
             case .success(let example):
                 DispatchQueue.main.async {
